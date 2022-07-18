@@ -1,6 +1,5 @@
 import spotipy
 import spotipy.util as util
-import requests
 import webbrowser
 import os
 
@@ -91,8 +90,10 @@ def choose_song(id_to_song_information, counter_to_list):
         print('\n' + 'The number inputted is outside of the result list size of 10!' +'\n')
         choose_song(id_to_song_information, counter_to_list)
     elif x == 'current':
-        # TODO
-        print(sp.current_user_playing_track())
+        artist_name_list = []
+        for artist in sp.current_user_playing_track()['item']['artists']:
+            artist_name_list.append(artist['name'])
+        print(str(sp.current_user_playing_track()['item']['name']) + ' by ' + str(artist_name_list))
         choose_song(id_to_song_information, counter_to_list)
     elif x == 'redo':
         main()
@@ -145,9 +146,12 @@ def get_song_information(id_to_song_information, id):
     elif x == 'quit':
         print('')
         return
+    else:
+        print('\n' + 'Invalid command!' + '\n')
+        get_song_information(id_to_song_information, id)
 
 # sp.add_to_queue()
-# voice recognition, lyrics
+# voice recognition, lyrics, fun facts
 
 if __name__ == '__main__':
     main()
