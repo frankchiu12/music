@@ -79,6 +79,7 @@ def choose_song(id_to_song_information, counter_to_list):
 
 def get_song_information(id_to_song_information, id):
     x = input('command> ')
+
     if x == 'name':
         get_song_information_helper(id_to_song_information, id, 0)
     elif x == 'artist name':
@@ -91,54 +92,42 @@ def get_song_information(id_to_song_information, id):
         get_song_information_helper(id_to_song_information, id, 4)
     elif x == 'open':
         webbrowser.open(id_to_song_information[id][6])
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print('Opening song ...' + '\n')
-        get_song_information(id_to_song_information, id)
+        print_and_clear(id_to_song_information, id, 'Opening song ...')
     elif x  == 'album':
         webbrowser.open(id_to_song_information[id][7])
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print('Opening album ...' + '\n')
-        get_song_information(id_to_song_information, id)
+        print_and_clear(id_to_song_information, id, 'Opening album ...')
     elif x == 'artist page':
         webbrowser.open(id_to_song_information[id][8])
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print('Opening artist page ...' + '\n')
-        get_song_information(id_to_song_information, id)
+        print_and_clear(id_to_song_information, id, 'Opening artist page ...')
     elif x == 'image':
         webbrowser.open(id_to_song_information[id][9])
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print('Opening artist page ...' + '\n')
-        get_song_information(id_to_song_information, id)
+        print_and_clear(id_to_song_information, id, 'Opening image ...')
     elif x == 'play':
         sp.start_playback(device_id='bddcb19206692c58a23c8c88a13144e1d7e4541e', uris=[id_to_song_information[id][5]])
         os.system('cls' if os.name == 'nt' else 'clear')
         print('Playing ' + str(id_to_song_information[id][0]) + ' by ' + str(id_to_song_information[id][1]) + ' ...' + '\n')
         get_song_information(id_to_song_information, id)
     elif x == 'continue':
-        if sp.current_playback() is not None and not sp.current_playback()['is_playing']:
-            sp.start_playback()
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('Continuing ...' + '\n')
-            get_song_information(id_to_song_information, id)
-        else:
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('No active device/already playing.' + '\n')
-            get_song_information(id_to_song_information, id)
+        try:
+            if not sp.current_playback()['is_playing']:
+                sp.start_playback()
+                print_and_clear(id_to_song_information, id, 'Continuing ...')
+            else:
+                print_and_clear(id_to_song_information, id, 'Already playing.')
+        except:
+            print_and_clear(id_to_song_information, id, 'No active device.')
     elif x == 'pause':
-        if sp.current_playback() is not None and sp.current_playback()['is_playing']:
-            sp.pause_playback()
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('No active device/paused.' + '\n')
-            get_song_information(id_to_song_information, id)
-        else:
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('Already paused.' + '\n')
-            get_song_information(id_to_song_information, id)
+        try:
+            if sp.current_playback()['is_playing']:
+                sp.pause_playback()
+                print_and_clear(id_to_song_information, id, 'Paused.')
+            else:
+                print_and_clear(id_to_song_information, id, 'Already paused.')
+        except:
+            print_and_clear(id_to_song_information, id, 'No active device.')
     elif x == 'loop':
         sp.repeat('track')
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print('Repeating ...' + '\n')
-        get_song_information(id_to_song_information, id)
+        print_and_clear(id_to_song_information, id, 'Repeating ...')
     elif x == 'queue':
         try:
             sp.add_to_queue(id_to_song_information[id][5])
@@ -194,9 +183,11 @@ def get_song_information_helper(id_to_song_information, id, index):
     get_song_information(id_to_song_information, id)
 
 def print_and_clear(id_to_song_information, id, message):
-    pass
-    
-# voice recognition, lyrics, fun facts
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print(message + '\n')
+    get_song_information(id_to_song_information, id)
 
 if __name__ == '__main__':
     main()
+
+# voice recognition, lyrics, fun facts, look through api list (later)
