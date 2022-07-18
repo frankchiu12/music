@@ -11,30 +11,6 @@ sp = spotipy.Spotify(auth=token)
 
 os.system('open /Applications/Spotify.app')
 
-# playlist_link = 'https://open.spotify.com/playlist/37i9dQZEVXbNG2KDcFcKOF?si=1333723a6eff4b7f'
-# playlist_URI = playlist_link.split("/")[-1].split("?")[0]
-
-# for track in sp.playlist_tracks(playlist_URI)["items"]:
-#     track_uri = track["track"]["uri"]
-#     track_name = track["track"]["name"]
-#     artist_uri = track["track"]["artists"][0]["uri"]
-#     artist_info = sp.artist(artist_uri)
-#     artist_name = track["track"]["artists"][0]["name"]
-#     artist_pop = artist_info["popularity"]
-#     artist_genres = artist_info["genres"]
-#     album = track["track"]["album"]["name"]
-#     track_pop = track["track"]["popularity"]
-
-#     print(track_uri)
-#     print(track_name)
-#     print(artist_uri)
-#     print(artist_info)
-#     print(artist_name)
-#     print(artist_pop)
-#     print(artist_genres)
-#     print(album)
-#     print(track_pop)
-
 def main():
 
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -104,20 +80,15 @@ def choose_song(id_to_song_information, counter_to_list):
 def get_song_information(id_to_song_information, id):
     x = input('command> ')
     if x == 'name':
-        print('\n' + str(id_to_song_information[id][0]) + '\n')
-        get_song_information(id_to_song_information, id)
+        get_song_information_helper(id_to_song_information, id, 0)
     elif x == 'artist name':
-        print('\n' + str(id_to_song_information[id][1]) + '\n')
-        get_song_information(id_to_song_information, id)
+        get_song_information_helper(id_to_song_information, id, 1)
     elif x == 'album name':
-        print('\n' + str(id_to_song_information[id][2]) + '\n')
-        get_song_information(id_to_song_information, id)
+        get_song_information_helper(id_to_song_information, id, 2)
     elif x == 'release date':
-        print('\n' + str(id_to_song_information[id][3]) + '\n')
-        get_song_information(id_to_song_information, id)
+        get_song_information_helper(id_to_song_information, id, 3)
     elif x == 'popularity':
-        print('\n' + str(id_to_song_information[id][4]) + '\n')
-        get_song_information(id_to_song_information, id)
+        get_song_information_helper(id_to_song_information, id, 4)
     elif x == 'open':
         webbrowser.open(id_to_song_information[id][6])
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -190,7 +161,25 @@ def get_song_information(id_to_song_information, id):
             print('\n' + 'No song is currently playing.' + '\n')
             get_song_information(id_to_song_information, id)
     elif x == 'next':
-        pass
+        try:
+            sp.next_track()
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('Skipping to next ...' + '\n')
+            get_song_information(id_to_song_information, id)
+        except:
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('No active device.' + '\n')
+            get_song_information(id_to_song_information, id)
+    elif x == 'previous':
+        try:
+            sp.previous_track()
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('Going back to previous ...' + '\n')
+            get_song_information(id_to_song_information, id)
+        except:
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('No active device.' + '\n')
+            get_song_information(id_to_song_information, id)
     elif x == 'redo':
         main()
     elif x == 'quit':
@@ -200,7 +189,13 @@ def get_song_information(id_to_song_information, id):
         print('\n' + 'Invalid command!' + '\n')
         get_song_information(id_to_song_information, id)
 
-# sp.add_to_queue()
+def get_song_information_helper(id_to_song_information, id, index):
+    print('\n' + str(id_to_song_information[id][index]) + '\n')
+    get_song_information(id_to_song_information, id)
+
+def print_and_clear(id_to_song_information, id, message):
+    pass
+    
 # voice recognition, lyrics, fun facts
 
 if __name__ == '__main__':
