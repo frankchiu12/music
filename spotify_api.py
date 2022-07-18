@@ -4,7 +4,7 @@ import webbrowser
 import os
 
 username = 'chiusiun'
-scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state'
+scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played'
 redirectURI = 'http://google.com/'
 token = util.prompt_for_user_token(username, scope, '3aa6dc3eea4b485497c73da406f11802', 'c08afd7602b740589ccf5198eb2982a2', redirectURI)
 sp = spotipy.Spotify(auth=token)
@@ -17,46 +17,68 @@ def main():
     term_size = os.get_terminal_size()
     print('=' * term_size.columns + '\n')
 
-    dictionary_list = initial_search()
-    id_to_song_information = dictionary_list[0]
-    counter_to_id = dictionary_list[1]
-
-    choose_song(id_to_song_information, counter_to_id)
+    initial_search()
 
 def initial_search():
     x = input('search> ')
-    search = (sp.search(q = x, type = 'track', limit = 10))['tracks']
 
-    id_to_song_information = {}
-    for song in search['items']:
-        if song['id'] not in id_to_song_information:
-            id_to_song_information[song['id']] = []
-        id_to_song_information[song['id']].append(song['name'])
-        artist_name_list = []
-        for artist in song['artists']:
-            artist_name_list.append(artist['name'])
-        id_to_song_information[song['id']].append(artist_name_list)
-        id_to_song_information[song['id']].append(song['album']['name'])
-        id_to_song_information[song['id']].append(song['album']['release_date'])
-        id_to_song_information[song['id']].append(song['popularity'])
-        id_to_song_information[song['id']].append(song['uri'])
-        id_to_song_information[song['id']].append(song['external_urls']['spotify'])
-        id_to_song_information[song['id']].append(song['album']['external_urls']['spotify'])
-        id_to_song_information[song['id']].append(song['album']['artists'][0]['external_urls']['spotify'])
-        id_to_song_information[song['id']].append(song['album']['images'][0]['url'])
+    if x == 'skip':
+        if sp.current_user_playing_track() is not None:
+            id_to_song_information = {}
+            song = sp.current_user_playing_track()['item']
+            if song['id'] not in id_to_song_information:
+                id_to_song_information[song['id']] = []
+            id_to_song_information[song['id']].append(song['name'])
+            artist_name_list = []
+            for artist in song['artists']:
+                artist_name_list.append(artist['name'])
+            id_to_song_information[song['id']].append(artist_name_list)
+            id_to_song_information[song['id']].append(song['album']['name'])
+            id_to_song_information[song['id']].append(song['album']['release_date'])
+            id_to_song_information[song['id']].append(song['popularity'])
+            id_to_song_information[song['id']].append(song['uri'])
+            id_to_song_information[song['id']].append(song['external_urls']['spotify'])
+            id_to_song_information[song['id']].append(song['album']['external_urls']['spotify'])
+            id_to_song_information[song['id']].append(song['album']['artists'][0]['external_urls']['spotify'])
+            id_to_song_information[song['id']].append(song['album']['images'][0]['url'])
 
-    print('')
-    counter = 1
-    counter_to_list = {}
-    for id, song_information in id_to_song_information.items():
-        description = str(song_information[0]) + ' by ' + str(song_information[1]) + ', id:' + str(id)
-        print(str(counter) + '. ' + description)
-        if counter not in counter_to_list:
-            counter_to_list[counter] = description
-        counter += 1
-    print('')
+            os.system('cls' if os.name == 'nt' else 'clear')
+            term_size = os.get_terminal_size()
+            print('=' * term_size.columns + '\n')
+            get_song_information(id_to_song_information, song['id'])
+    else:
+        search = (sp.search(q = x, type = 'track', limit = 10))['tracks']
 
-    return id_to_song_information, counter_to_list
+        id_to_song_information = {}
+        for song in search['items']:
+            if song['id'] not in id_to_song_information:
+                id_to_song_information[song['id']] = []
+            id_to_song_information[song['id']].append(song['name'])
+            artist_name_list = []
+            for artist in song['artists']:
+                artist_name_list.append(artist['name'])
+            id_to_song_information[song['id']].append(artist_name_list)
+            id_to_song_information[song['id']].append(song['album']['name'])
+            id_to_song_information[song['id']].append(song['album']['release_date'])
+            id_to_song_information[song['id']].append(song['popularity'])
+            id_to_song_information[song['id']].append(song['uri'])
+            id_to_song_information[song['id']].append(song['external_urls']['spotify'])
+            id_to_song_information[song['id']].append(song['album']['external_urls']['spotify'])
+            id_to_song_information[song['id']].append(song['album']['artists'][0]['external_urls']['spotify'])
+            id_to_song_information[song['id']].append(song['album']['images'][0]['url'])
+
+        print('')
+        counter = 1
+        counter_to_list = {}
+        for id, song_information in id_to_song_information.items():
+            description = str(song_information[0]) + ' by ' + str(song_information[1]) + ', id:' + str(id)
+            print(str(counter) + '. ' + description)
+            if counter not in counter_to_list:
+                counter_to_list[counter] = description
+            counter += 1
+        print('')
+
+        choose_song(id_to_song_information, counter_to_list)
 
 def choose_song(id_to_song_information, counter_to_list):
     x = input('song_number> ')
@@ -155,6 +177,9 @@ def get_song_information(id_to_song_information, id):
             print_and_clear(id_to_song_information, id, 'Going back to previous ...')
         except:
             print_and_clear(id_to_song_information, id, 'No active device.')
+    elif x == 'recent':
+        # TODO
+        print(sp.current_user_recently_played())
     elif x == 'redo':
         main()
     elif x == 'quit':
@@ -163,6 +188,12 @@ def get_song_information(id_to_song_information, id):
     else:
         print('\n' + 'Invalid command!' + '\n')
         get_song_information(id_to_song_information, id)
+
+def clear_terminal():
+    pass
+
+def populate_song_information_list():
+    pass
 
 def get_song_information_helper(id_to_song_information, id, index):
     print('\n' + str(id_to_song_information[id][index]) + '\n')
