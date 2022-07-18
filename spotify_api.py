@@ -1,16 +1,14 @@
 import spotipy
+import spotipy.util as util
 import requests
 import webbrowser
 import os
 
 username = 'chiusiun'
+scope = 'user-read-currently-playing'
 redirectURI = 'http://google.com/'
-oauth_object = spotipy.SpotifyOAuth('3aa6dc3eea4b485497c73da406f11802','c08afd7602b740589ccf5198eb2982a2',redirectURI)
-token_dict = oauth_object.get_cached_token()
-token = token_dict['access_token']
+token = util.prompt_for_user_token(username, scope, '3aa6dc3eea4b485497c73da406f11802', 'c08afd7602b740589ccf5198eb2982a2', redirectURI)
 sp = spotipy.Spotify(auth=token)
-user = sp.current_user()
-SPOTIFY_GET_CURRENT_TRACK_URL = 'https://api.spotify.com/v1/me/player/currently-playing'
 
 # playlist_link = 'https://open.spotify.com/playlist/37i9dQZEVXbNG2KDcFcKOF?si=1333723a6eff4b7f'
 # playlist_URI = playlist_link.split("/")[-1].split("?")[0]
@@ -92,6 +90,10 @@ def choose_song(id_to_song_information, counter_to_list):
     elif x.isdigit():
         print('\n' + 'The number inputted is outside of the result list size of 10!' +'\n')
         choose_song(id_to_song_information, counter_to_list)
+    elif x == 'current':
+        # TODO
+        print(sp.current_user_playing_track())
+        choose_song(id_to_song_information, counter_to_list)
     elif x == 'redo':
         main()
     elif x == 'quit':
@@ -144,32 +146,7 @@ def get_song_information(id_to_song_information, id):
         print('')
         return
 
-# def get_current_track(access_token):
-#     response = requests.get(
-#         SPOTIFY_GET_CURRENT_TRACK_URL,
-#         headers={
-#             "Authorization": f"Bearer {access_token}"
-#         }
-#     )
-#     json_resp = response.json()
-
-#     track_id = json_resp['item']['id']
-#     track_name = json_resp['item']['name']
-#     artists = [artist for artist in json_resp['item']['artists']]
-
-#     link = json_resp['item']['external_urls']['spotify']
-
-#     artist_names = ', '.join([artist['name'] for artist in artists])
-
-#     current_track_info = {
-#         "id": track_id,
-#         "track_name": track_name,
-#         "artists": artist_names,
-#         "link": link
-#     }
-
-#     return current_track_info
-
+# sp.add_to_queue()
 # voice recognition, lyrics
 
 if __name__ == '__main__':
