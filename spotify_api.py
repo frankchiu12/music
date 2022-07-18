@@ -104,9 +104,7 @@ def get_song_information(id_to_song_information, id):
         print_and_clear(id_to_song_information, id, 'Opening image ...')
     elif x == 'play':
         sp.start_playback(device_id='bddcb19206692c58a23c8c88a13144e1d7e4541e', uris=[id_to_song_information[id][5]])
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print('Playing ' + str(id_to_song_information[id][0]) + ' by ' + str(id_to_song_information[id][1]) + ' ...' + '\n')
-        get_song_information(id_to_song_information, id)
+        print_and_clear(id_to_song_information, id, 'Playing ' + str(id_to_song_information[id][0]) + ' by ' + str(id_to_song_information[id][1]) + ' ...')
     elif x == 'continue':
         try:
             if not sp.current_playback()['is_playing']:
@@ -131,13 +129,9 @@ def get_song_information(id_to_song_information, id):
     elif x == 'queue':
         try:
             sp.add_to_queue(id_to_song_information[id][5])
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('Adding to queue ...' + '\n')
-            get_song_information(id_to_song_information, id)
+            print_and_clear(id_to_song_information, id, 'Adding to queue ...')
         except:
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('No active device.' + '\n')
-            get_song_information(id_to_song_information, id)
+            print_and_clear(id_to_song_information, id, 'No active device.')
     elif x == 'current':
         if sp.current_user_playing_track() is not None:
             artist_name_list = []
@@ -152,23 +146,15 @@ def get_song_information(id_to_song_information, id):
     elif x == 'next':
         try:
             sp.next_track()
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('Skipping to next ...' + '\n')
-            get_song_information(id_to_song_information, id)
+            print_and_clear(id_to_song_information, id, 'Skipping to next ...')
         except:
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('No active device.' + '\n')
-            get_song_information(id_to_song_information, id)
+            print_and_clear(id_to_song_information, id, 'No active device.')
     elif x == 'previous':
         try:
             sp.previous_track()
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('Going back to previous ...' + '\n')
-            get_song_information(id_to_song_information, id)
+            print_and_clear(id_to_song_information, id, 'Going back to previous ...')
         except:
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print('No active device.' + '\n')
-            get_song_information(id_to_song_information, id)
+            print_and_clear(id_to_song_information, id, 'No active device.')
     elif x == 'redo':
         main()
     elif x == 'quit':
@@ -190,4 +176,4 @@ def print_and_clear(id_to_song_information, id, message):
 if __name__ == '__main__':
     main()
 
-# voice recognition, lyrics, fun facts, look through api list (later)
+# voice recognition, lyrics, fun facts, look through https://spotipy.readthedocs.io/en/2.12.0/ (later), sound notification
