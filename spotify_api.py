@@ -4,10 +4,12 @@ import webbrowser
 import os
 
 username = 'chiusiun'
-scope = 'user-read-currently-playing'
+scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state'
 redirectURI = 'http://google.com/'
 token = util.prompt_for_user_token(username, scope, '3aa6dc3eea4b485497c73da406f11802', 'c08afd7602b740589ccf5198eb2982a2', redirectURI)
 sp = spotipy.Spotify(auth=token)
+
+os.system('open /Applications/Spotify.app')
 
 # playlist_link = 'https://open.spotify.com/playlist/37i9dQZEVXbNG2KDcFcKOF?si=1333723a6eff4b7f'
 # playlist_URI = playlist_link.split("/")[-1].split("?")[0]
@@ -61,6 +63,7 @@ def initial_search():
         id_to_song_information[song['id']].append(song['album']['name'])
         id_to_song_information[song['id']].append(song['album']['release_date'])
         id_to_song_information[song['id']].append(song['popularity'])
+        id_to_song_information[song['id']].append(song['uri'])
         id_to_song_information[song['id']].append(song['external_urls']['spotify'])
         id_to_song_information[song['id']].append(song['album']['external_urls']['spotify'])
         id_to_song_information[song['id']].append(song['album']['artists'][0]['external_urls']['spotify'])
@@ -80,7 +83,7 @@ def initial_search():
     return id_to_song_information, counter_to_list
 
 def choose_song(id_to_song_information, counter_to_list):
-    x = input('next_command> ')
+    x = input('song_number> ')
 
     if x.isdigit() and 1 <= int(x) <= 10:
         id = counter_to_list[int(x)].partition('id:')[2]
@@ -88,12 +91,6 @@ def choose_song(id_to_song_information, counter_to_list):
         get_song_information(id_to_song_information, id)
     elif x.isdigit():
         print('\n' + 'The number inputted is outside of the result list size of 10!' +'\n')
-        choose_song(id_to_song_information, counter_to_list)
-    elif x == 'current':
-        artist_name_list = []
-        for artist in sp.current_user_playing_track()['item']['artists']:
-            artist_name_list.append(artist['name'])
-        print(str(sp.current_user_playing_track()['item']['name']) + ' by ' + str(artist_name_list))
         choose_song(id_to_song_information, counter_to_list)
     elif x == 'redo':
         main()
@@ -105,7 +102,7 @@ def choose_song(id_to_song_information, counter_to_list):
         choose_song(id_to_song_information, counter_to_list)
 
 def get_song_information(id_to_song_information, id):
-    x = input('get_information> ')
+    x = input('command> ')
     if x == 'name':
         print('\n' + str(id_to_song_information[id][0]) + '\n')
         get_song_information(id_to_song_information, id)
@@ -121,26 +118,79 @@ def get_song_information(id_to_song_information, id):
     elif x == 'popularity':
         print('\n' + str(id_to_song_information[id][4]) + '\n')
         get_song_information(id_to_song_information, id)
-    elif x == 'play':
-        webbrowser.open(id_to_song_information[id][5])
+    elif x == 'open':
+        webbrowser.open(id_to_song_information[id][6])
         os.system('cls' if os.name == 'nt' else 'clear')
         print('Opening song ...' + '\n')
         get_song_information(id_to_song_information, id)
     elif x  == 'album':
-        webbrowser.open(id_to_song_information[id][6])
+        webbrowser.open(id_to_song_information[id][7])
         os.system('cls' if os.name == 'nt' else 'clear')
         print('Opening album ...' + '\n')
         get_song_information(id_to_song_information, id)
     elif x == 'artist page':
-        webbrowser.open(id_to_song_information[id][7])
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print('Opening artist page ...' + '\n')
-        get_song_information(id_to_song_information, id)
-    elif x == 'image':
         webbrowser.open(id_to_song_information[id][8])
         os.system('cls' if os.name == 'nt' else 'clear')
         print('Opening artist page ...' + '\n')
         get_song_information(id_to_song_information, id)
+    elif x == 'image':
+        webbrowser.open(id_to_song_information[id][9])
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print('Opening artist page ...' + '\n')
+        get_song_information(id_to_song_information, id)
+    elif x == 'play':
+        sp.start_playback(device_id='bddcb19206692c58a23c8c88a13144e1d7e4541e', uris=[id_to_song_information[id][5]])
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print('Playing ' + str(id_to_song_information[id][0]) + ' by ' + str(id_to_song_information[id][1]) + ' ...' + '\n')
+        get_song_information(id_to_song_information, id)
+    elif x == 'continue':
+        if sp.current_playback() is not None and not sp.current_playback()['is_playing']:
+            sp.start_playback()
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('Continuing ...' + '\n')
+            get_song_information(id_to_song_information, id)
+        else:
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('No active device/already playing.' + '\n')
+            get_song_information(id_to_song_information, id)
+    elif x == 'pause':
+        if sp.current_playback() is not None and sp.current_playback()['is_playing']:
+            sp.pause_playback()
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('No active device/paused.' + '\n')
+            get_song_information(id_to_song_information, id)
+        else:
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('Already paused.' + '\n')
+            get_song_information(id_to_song_information, id)
+    elif x == 'loop':
+        sp.repeat('track')
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print('Repeating ...' + '\n')
+        get_song_information(id_to_song_information, id)
+    elif x == 'queue':
+        try:
+            sp.add_to_queue(id_to_song_information[id][5])
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('Adding to queue ...' + '\n')
+            get_song_information(id_to_song_information, id)
+        except:
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print('No active device.' + '\n')
+            get_song_information(id_to_song_information, id)
+    elif x == 'current':
+        if sp.current_user_playing_track() is not None:
+            artist_name_list = []
+            for artist in sp.current_user_playing_track()['item']['artists']:
+                artist_name_list.append(artist['name'])
+            print('\n' 
+            + str(sp.current_user_playing_track()['item']['name']) + ' by ' + str(artist_name_list) + '\n')
+            get_song_information(id_to_song_information, id)
+        else:
+            print('\n' + 'No song is currently playing.' + '\n')
+            get_song_information(id_to_song_information, id)
+    elif x == 'next':
+        pass
     elif x == 'redo':
         main()
     elif x == 'quit':
