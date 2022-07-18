@@ -1,14 +1,16 @@
 import spotipy
+import requests
 import webbrowser
 import os
 
 username = 'chiusiun'
 redirectURI = 'http://google.com/'
 oauth_object = spotipy.SpotifyOAuth('3aa6dc3eea4b485497c73da406f11802','c08afd7602b740589ccf5198eb2982a2',redirectURI)
-token_dict = oauth_object.get_access_token()
+token_dict = oauth_object.get_cached_token()
 token = token_dict['access_token']
 sp = spotipy.Spotify(auth=token)
 user = sp.current_user()
+SPOTIFY_GET_CURRENT_TRACK_URL = 'https://api.spotify.com/v1/me/player/currently-playing'
 
 # playlist_link = 'https://open.spotify.com/playlist/37i9dQZEVXbNG2KDcFcKOF?si=1333723a6eff4b7f'
 # playlist_URI = playlist_link.split("/")[-1].split("?")[0]
@@ -59,10 +61,13 @@ def initial_search():
         for artist in song['artists']:
             artist_name_list.append(artist['name'])
         id_to_song_information[song['id']].append(artist_name_list)
+        id_to_song_information[song['id']].append(song['album']['name'])
+        id_to_song_information[song['id']].append(song['album']['release_date'])
         id_to_song_information[song['id']].append(song['popularity'])
         id_to_song_information[song['id']].append(song['external_urls']['spotify'])
         id_to_song_information[song['id']].append(song['album']['external_urls']['spotify'])
         id_to_song_information[song['id']].append(song['album']['artists'][0]['external_urls']['spotify'])
+        id_to_song_information[song['id']].append(song['album']['images'][0]['url'])
 
     print('')
     counter = 1
@@ -80,16 +85,18 @@ def initial_search():
 def choose_song(id_to_song_information, counter_to_list):
     x = input('next_command> ')
 
-    if x == 'quit':
-        print('\n')
-        return
-    elif x.isdigit() and 1 <= int(x) <= 10:
+    if x.isdigit() and 1 <= int(x) <= 10:
         id = counter_to_list[int(x)].partition('id:')[2]
         print('\n' + 'Selected song ' + str(x) + ' (' + counter_to_list[int(x)] + ')' + '\n')
         get_song_information(id_to_song_information, id)
     elif x.isdigit():
         print('\n' + 'The number inputted is outside of the result list size of 10!' +'\n')
         choose_song(id_to_song_information, counter_to_list)
+    elif x == 'redo':
+        main()
+    elif x == 'quit':
+        print('\n')
+        return
     else:
         print('\n' + 'Invalid command!' + '\n')
         choose_song(id_to_song_information, counter_to_list)
@@ -102,29 +109,68 @@ def get_song_information(id_to_song_information, id):
     elif x == 'artist name':
         print('\n' + str(id_to_song_information[id][1]) + '\n')
         get_song_information(id_to_song_information, id)
-    elif x == 'popularity':
+    elif x == 'album name':
         print('\n' + str(id_to_song_information[id][2]) + '\n')
         get_song_information(id_to_song_information, id)
+    elif x == 'release date':
+        print('\n' + str(id_to_song_information[id][3]) + '\n')
+        get_song_information(id_to_song_information, id)
+    elif x == 'popularity':
+        print('\n' + str(id_to_song_information[id][4]) + '\n')
+        get_song_information(id_to_song_information, id)
     elif x == 'play':
-        webbrowser.open(id_to_song_information[id][3])
+        webbrowser.open(id_to_song_information[id][5])
         os.system('cls' if os.name == 'nt' else 'clear')
         print('Opening song ...' + '\n')
         get_song_information(id_to_song_information, id)
     elif x  == 'album':
-        webbrowser.open(id_to_song_information[id][4])
+        webbrowser.open(id_to_song_information[id][6])
         os.system('cls' if os.name == 'nt' else 'clear')
         print('Opening album ...' + '\n')
         get_song_information(id_to_song_information, id)
     elif x == 'artist page':
-        webbrowser.open(id_to_song_information[id][5])
+        webbrowser.open(id_to_song_information[id][7])
         os.system('cls' if os.name == 'nt' else 'clear')
         print('Opening artist page ...' + '\n')
         get_song_information(id_to_song_information, id)
+    elif x == 'image':
+        webbrowser.open(id_to_song_information[id][8])
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print('Opening artist page ...' + '\n')
+        get_song_information(id_to_song_information, id)
+    elif x == 'redo':
+        main()
     elif x == 'quit':
         print('')
         return
 
-# research, voice recognition
+# def get_current_track(access_token):
+#     response = requests.get(
+#         SPOTIFY_GET_CURRENT_TRACK_URL,
+#         headers={
+#             "Authorization": f"Bearer {access_token}"
+#         }
+#     )
+#     json_resp = response.json()
+
+#     track_id = json_resp['item']['id']
+#     track_name = json_resp['item']['name']
+#     artists = [artist for artist in json_resp['item']['artists']]
+
+#     link = json_resp['item']['external_urls']['spotify']
+
+#     artist_names = ', '.join([artist['name'] for artist in artists])
+
+#     current_track_info = {
+#         "id": track_id,
+#         "track_name": track_name,
+#         "artists": artist_names,
+#         "link": link
+#     }
+
+#     return current_track_info
+
+# voice recognition, lyrics
 
 if __name__ == '__main__':
     main()
