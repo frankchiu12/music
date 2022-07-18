@@ -1,13 +1,17 @@
 import spotipy
 import spotipy.util as util
-import webbrowser
+from lyricsgenius import Genius
 import os
+import webbrowser
 
 username = 'chiusiun'
 scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played'
 redirectURI = 'http://google.com/'
 token = util.prompt_for_user_token(username, scope, '3aa6dc3eea4b485497c73da406f11802', 'c08afd7602b740589ccf5198eb2982a2', redirectURI)
 sp = spotipy.Spotify(auth=token)
+
+client_access_token = 'Q8q2Cs-4YkZT_83az4gYWpQrkSthadNOWMeuJhJOmHmIB3sBj3_HMX9SY2gR2HC5'
+genius = Genius(client_access_token)
 
 os.system('open /Applications/Spotify.app')
 
@@ -46,6 +50,8 @@ def initial_search():
             term_size = os.get_terminal_size()
             print('=' * term_size.columns + '\n')
             get_song_information(id_to_song_information, song['id'])
+        else:
+            print('\n' + 'No active device.' + '\n')
     else:
         search = (sp.search(q = x, type = 'track', limit = 10))['tracks']
 
@@ -203,6 +209,9 @@ def print_and_clear(id_to_song_information, id, message):
     os.system('cls' if os.name == 'nt' else 'clear')
     print(message + '\n')
     get_song_information(id_to_song_information, id)
+
+song = genius.search_song('Faded', 'Alan Walker')
+print(song.lyrics)
 
 if __name__ == '__main__':
     main()
