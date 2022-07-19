@@ -17,16 +17,14 @@ os.system('open /Applications/Spotify.app')
 
 def main():
 
-    os.system('cls' if os.name == 'nt' else 'clear')
-    term_size = os.get_terminal_size()
-    print('=' * term_size.columns + '\n')
+    clear_terminal()
 
     initial_search()
 
 def initial_search():
     x = input('search> ')
 
-    if x == 'skip':
+    if x == 'current':
         if sp.current_user_playing_track() is not None:
             id_to_song_information = {}
             song = sp.current_user_playing_track()['item']
@@ -46,9 +44,7 @@ def initial_search():
             id_to_song_information[song['id']].append(song['album']['artists'][0]['external_urls']['spotify'])
             id_to_song_information[song['id']].append(song['album']['images'][0]['url'])
 
-            os.system('cls' if os.name == 'nt' else 'clear')
-            term_size = os.get_terminal_size()
-            print('=' * term_size.columns + '\n')
+            clear_terminal()
             get_song_information(id_to_song_information, song['id'])
         else:
             print('\n' + 'No active device.' + '\n')
@@ -132,8 +128,14 @@ def get_song_information(id_to_song_information, id):
         webbrowser.open(id_to_song_information[id][9])
         print_and_clear(id_to_song_information, id, 'Opening image ...')
     elif x == 'lyrics':
-        song = genius.search_song(id_to_song_information[id][0], id_to_song_information[id][1])
-        print_and_clear(id_to_song_information, id, '\n' + song.lyrics)
+        song = id_to_song_information[id][0]
+        if ' - From' in song:
+            song = song.partition(' - From')[0]
+        song = genius.search_song(song, id_to_song_information[id][1])
+        if song is None:
+            print_and_clear(id_to_song_information, id, 'No lyrics found.')
+        else:
+            print_and_clear(id_to_song_information, id, song.lyrics)
     elif x == 'play':
         sp.start_playback(device_id='bddcb19206692c58a23c8c88a13144e1d7e4541e', uris=[id_to_song_information[id][5]])
         print_and_clear(id_to_song_information, id, 'Playing ' + str(id_to_song_information[id][0]) + ' by ' + str(id_to_song_information[id][1]) + ' ...')
@@ -173,7 +175,7 @@ def get_song_information(id_to_song_information, id):
             + str(sp.current_user_playing_track()['item']['name']) + ' by ' + str(artist_name_list) + '\n')
             get_song_information(id_to_song_information, id)
         else:
-            print('\n' + 'No song is currently playing.' + '\n')
+            print('No song is currently playing.' + '\n')
             get_song_information(id_to_song_information, id)
     elif x == 'next':
         try:
@@ -196,11 +198,13 @@ def get_song_information(id_to_song_information, id):
         print('')
         return
     else:
-        print('\n' + 'Invalid command!' + '\n')
+        print('Invalid command!' + '\n')
         get_song_information(id_to_song_information, id)
 
 def clear_terminal():
-    pass
+    os.system('cls' if os.name == 'nt' else 'clear')
+    term_size = os.get_terminal_size()
+    print('=' * term_size.columns + '\n')
 
 def populate_song_information_list():
     pass
@@ -217,4 +221,4 @@ def print_and_clear(id_to_song_information, id, message):
 if __name__ == '__main__':
     main()
 
-# voice recognition, lyrics, fun facts, look through https://spotipy.readthedocs.io/en/2.12.0/ (later), sound notification
+# voice recognition, fun facts, look through https://spotipy.readthedocs.io/en/2.12.0/ (later), sound notification
