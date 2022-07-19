@@ -107,6 +107,7 @@ def choose_song(id_to_song_information, counter_to_list):
 
 def get_song_information(id_to_song_information, id):
     x = input('command> ')
+    print('')
 
     if x == 'name':
         get_song_information_helper(id_to_song_information, id, 0)
@@ -130,6 +131,9 @@ def get_song_information(id_to_song_information, id):
     elif x == 'image':
         webbrowser.open(id_to_song_information[id][9])
         print_and_clear(id_to_song_information, id, 'Opening image ...')
+    elif x == 'lyrics':
+        song = genius.search_song(id_to_song_information[id][0], id_to_song_information[id][1])
+        print_and_clear(id_to_song_information, id, '\n' + song.lyrics)
     elif x == 'play':
         sp.start_playback(device_id='bddcb19206692c58a23c8c88a13144e1d7e4541e', uris=[id_to_song_information[id][5]])
         print_and_clear(id_to_song_information, id, 'Playing ' + str(id_to_song_information[id][0]) + ' by ' + str(id_to_song_information[id][1]) + ' ...')
@@ -202,16 +206,13 @@ def populate_song_information_list():
     pass
 
 def get_song_information_helper(id_to_song_information, id, index):
-    print('\n' + str(id_to_song_information[id][index]) + '\n')
+    print(str(id_to_song_information[id][index]) + '\n')
     get_song_information(id_to_song_information, id)
 
 def print_and_clear(id_to_song_information, id, message):
     os.system('cls' if os.name == 'nt' else 'clear')
     print(message + '\n')
     get_song_information(id_to_song_information, id)
-
-song = genius.search_song('Faded', 'Alan Walker')
-print(song.lyrics)
 
 if __name__ == '__main__':
     main()
