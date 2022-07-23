@@ -6,8 +6,6 @@ import webbrowser
 import sys, os
 from termcolor import colored
 
-print('\033c', end=None)
-
 username = 'chiusiun'
 scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played'
 client_id = '3aa6dc3eea4b485497c73da406f11802'
