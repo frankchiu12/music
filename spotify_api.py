@@ -29,14 +29,14 @@ def main():
 def initial_search():
     x = input('search> ')
 
-    if x == 'voice':
+    if x == '/voice':
         with mic as source:
             os.system('cls' if os.name == 'nt' else 'clear')
             print('Listening ...' + '\n')
             audio = r.listen(source)
             x = r.recognize_google(audio)
 
-    if x == 'current':
+    if x == '/skip':
         if sp.current_user_playing_track() is not None:
             id_to_song_information = {}
             song = sp.current_user_playing_track()['item']
@@ -141,13 +141,13 @@ def get_song_information(id_to_song_information, id):
         for track in sp.artist_top_tracks(artist_URL)['tracks']:
             co_artist_list = []
             main_artist = id_to_song_information[id][1]
-            track_name = track['name']
+            song_name = track['name']
 
             for co_artist in track['artists']:
                 co_artist_list.append(co_artist['name'])
             if main_artist in co_artist_list:
                 co_artist_list.remove(main_artist)
-            print(str(counter) + '. ' + colored(track_name, 'cyan') + colored(' with ', 'grey') + str(co_artist_list))
+            print(str(counter) + '. ' + colored(song_name, 'cyan') + colored(' with ', 'grey') + str(co_artist_list))
             counter += 1
 
         print(colored('Albums:', attrs = ['bold', 'underline']))
@@ -201,6 +201,18 @@ def get_song_information(id_to_song_information, id):
                 print_and_clear(id_to_song_information, id, 'Already paused.')
         except:
             print_and_clear(id_to_song_information, id, 'No active device.')
+    elif x =='volume':
+        x = input('volume> ')
+
+        if x.isdigit() and 0 <= int(x) <= 100:
+            x = int(x)
+        elif x.isdigit():
+            print('\n' + 'The volume inputted is out of range!' +'\n')
+        elif x == 'keep':
+            get_song_information(id_to_song_information, id)
+
+        sp.volume(x)
+        get_song_information(id_to_song_information, id)
     elif x == 'loop':
         sp.repeat('track')
         print_and_clear(id_to_song_information, id, 'Repeating ...')
@@ -236,9 +248,19 @@ def get_song_information(id_to_song_information, id):
         except:
             print_and_clear(id_to_song_information, id, 'No active device.')
     elif x == 'recent':
-        # TODO: make list
+        counter = 1
         for song in sp.current_user_recently_played(10)['items']:
-            print(colored(str(song['track']['name']), 'red') + ' by ' + colored(str(song['track']['artists'][0]['name']), 'blue') + ', id: ' + colored(song['track']['id'], 'green'))
+            song_name = song['track']['name']
+            song_ID = song['track']['id']
+            artist_list = []
+            for artist in song['track']['artists']:
+                artist_list.append(artist['name'])
+
+            print(str(counter) + '. ' + colored(song_name, 'red') + ' by ' + colored(str(artist_list), 'blue') + ', id: ' + colored(song_ID, 'green'))
+            counter += 1
+        
+        print('')
+        get_song_information(id_to_song_information, id)
     elif x == 'redo':
         main()
     elif x == 'quit':
