@@ -1,19 +1,21 @@
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
-import sys, os
-import webbrowser
-from termcolor import colored
 import speech_recognition as sr
+import webbrowser
+import sys, os
+from termcolor import colored
 
 username = 'chiusiun'
 scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played'
+client_id = '3aa6dc3eea4b485497c73da406f11802'
+client_secret = 'c08afd7602b740589ccf5198eb2982a2'
 redirect_URI = 'http://google.com/'
-token = util.prompt_for_user_token(username, scope, '3aa6dc3eea4b485497c73da406f11802', 'c08afd7602b740589ccf5198eb2982a2', redirect_URI)
-sp = spotipy.Spotify(auth = token)
+spotify_token = util.prompt_for_user_token(username, scope, client_id, client_secret, redirect_URI)
+sp = spotipy.Spotify(auth = spotify_token)
 
-client_access_token = 'Q8q2Cs-4YkZT_83az4gYWpQrkSthadNOWMeuJhJOmHmIB3sBj3_HMX9SY2gR2HC5'
-genius = Genius(client_access_token)
+genius_token = 'Q8q2Cs-4YkZT_83az4gYWpQrkSthadNOWMeuJhJOmHmIB3sBj3_HMX9SY2gR2HC5'
+genius = Genius(genius_token)
 
 r = sr.Recognizer()
 mic = sr.Microphone()
@@ -30,7 +32,7 @@ def initial_search():
     if x == 'voice':
         with mic as source:
             os.system('cls' if os.name == 'nt' else 'clear')
-            print('Listening ...')
+            print('Listening ...' + '\n')
             audio = r.listen(source)
             x = r.recognize_google(audio)
 
@@ -54,8 +56,13 @@ def initial_search():
         counter = 1
         counter_to_list = {}
         for id, song_information in id_to_song_information.items():
-            description = colored(str(song_information[0]), 'red') + ' by ' + colored(str(song_information[1]), 'blue') + ', id: ' + str(id)
-            print(str(counter) + '. ' + description)
+            song_name = song_information[0]
+            artist_list = str(song_information[1])
+            id = str(id)
+            
+            colored_description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + colored(id, 'green')
+            description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + id
+            print(str(counter) + '. ' + colored_description)
             if counter not in counter_to_list:
                 counter_to_list[counter] = description
             counter += 1
@@ -68,8 +75,9 @@ def choose_song(id_to_song_information, counter_to_list):
 
     if x.isdigit() and 1 <= int(x) <= 10:
         id = counter_to_list[int(x)].partition('id: ')[2]
+        description = counter_to_list[int(x)].partition(', id: ')[0]
         os.system('cls' if os.name == 'nt' else 'clear')
-        print('\n' + 'Selected song ' + str(x) + ' (' + counter_to_list[int(x)] + ')' + '\n')
+        print('Selected song ' + str(x) + ' (' + description + ')' + '\n')
         get_song_information(id_to_song_information, id)
     elif x.isdigit():
         print('\n' + 'The number inputted is outside of the result list size of 10!' +'\n')
@@ -78,7 +86,6 @@ def choose_song(id_to_song_information, counter_to_list):
         main()
     elif x == 'quit':
         os.system('cls' if os.name == 'nt' else 'clear')
-        print('')
         return
     else:
         print('\n' + 'Invalid command!' + '\n')
@@ -88,7 +95,7 @@ def get_song_information(id_to_song_information, id):
     x = input('command> ')
     print('')
 
-    if x == 'name':
+    if x == 'song name':
         get_song_information_helper(id_to_song_information, id, 0)
     elif x == 'artist name':
         get_song_information_helper(id_to_song_information, id, 1)
@@ -99,23 +106,30 @@ def get_song_information(id_to_song_information, id):
     elif x == 'popularity':
         get_song_information_helper(id_to_song_information, id, 4)
     elif x == 'open':
-        webbrowser.open(id_to_song_information[id][6])
+        song_URL = id_to_song_information[id][6]
+        webbrowser.open(song_URL)
         print_and_clear(id_to_song_information, id, 'Opening song ...')
     elif x  == 'album page':
-        webbrowser.open(id_to_song_information[id][7])
+        album_URL = id_to_song_information[id][7]
+        webbrowser.open(album_URL)
         print_and_clear(id_to_song_information, id, 'Opening album ...')
     elif x == 'artist page':
-        webbrowser.open(id_to_song_information[id][8])
+        artist_URL = id_to_song_information[id][8]
+        webbrowser.open(artist_URL)
         print_and_clear(id_to_song_information, id, 'Opening artist page ...')
     elif x == 'image':
-        webbrowser.open(id_to_song_information[id][9])
+        image_URL = id_to_song_information[id][9]
+        webbrowser.open(image_URL)
         print_and_clear(id_to_song_information, id, 'Opening image ...')
     elif x == 'artist info':
         artist_URL = id_to_song_information[id][8]
+        total_followers = str(sp.artist(artist_URL)['followers']['total'])
+        genre_list = str(sp.artist(artist_URL)['genres'])
+        popularity = str(sp.artist(artist_URL)['popularity'])
 
-        print(colored('Followers: ', 'red') + str(sp.artist(artist_URL)['followers']['total']))
-        print(colored('Genres: ', 'yellow') + str(sp.artist(artist_URL)['genres']))
-        print(colored('Popularity: ', 'green') + str(sp.artist(artist_URL)['popularity']))
+        print(colored('Total Followers: ', 'red') + total_followers)
+        print(colored('Genres: ', 'yellow') + genre_list)
+        print(colored('Popularity: ', 'green') + popularity)
 
         related_artist_list = []
         for related_artist in sp.artist_related_artists(artist_URL)['artists']:
@@ -126,18 +140,24 @@ def get_song_information(id_to_song_information, id):
         counter = 1
         for track in sp.artist_top_tracks(artist_URL)['tracks']:
             co_artist_list = []
+            main_artist = id_to_song_information[id][1]
+            track_name = track['name']
+
             for co_artist in track['artists']:
                 co_artist_list.append(co_artist['name'])
-            if id_to_song_information[id][1] in co_artist_list:
-                co_artist_list.remove(id_to_song_information[id][1])
-            print(str(counter) + '. ' + colored(track['name'], 'cyan') + colored(' with ', 'grey') + str(co_artist_list))
+            if main_artist in co_artist_list:
+                co_artist_list.remove(main_artist)
+            print(str(counter) + '. ' + colored(track_name, 'cyan') + colored(' with ', 'grey') + str(co_artist_list))
             counter += 1
 
         print(colored('Albums:', attrs = ['bold', 'underline']))
 
         counter = 1
         for album in sp.artist_albums(artist_URL)['items']:
-            print(str(counter) + '. ' + colored(album['name'], 'cyan') + colored(' with ', 'grey') + str(album['total_tracks']) + ' song(s)')
+            album_name = album['name']
+            album_total_track = str(album['total_tracks'])
+
+            print(str(counter) + '. ' + colored(album_name, 'cyan') + colored(' with ', 'grey') + album_total_track + ' song(s)')
             counter += 1
 
         print('')
@@ -157,8 +177,12 @@ def get_song_information(id_to_song_information, id):
         else:
             print_and_clear(id_to_song_information, id, song.lyrics)
     elif x == 'play':
-        sp.start_playback(device_id='bddcb19206692c58a23c8c88a13144e1d7e4541e', uris=[id_to_song_information[id][5]])
-        print_and_clear(id_to_song_information, id, 'Playing ' + colored(str(id_to_song_information[id][0]), 'red') + ' by ' + colored(str(id_to_song_information[id][1]), 'blue') + ' ...')
+        song_URI_list = [id_to_song_information[id][5]]
+        song_name = id_to_song_information[id][0]
+        artist_list = str(id_to_song_information[id][1])
+
+        sp.start_playback(device_id = 'bddcb19206692c58a23c8c88a13144e1d7e4541e', uris = song_URI_list)
+        print_and_clear(id_to_song_information, id, 'Playing ' + colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ' ...')
     elif x == 'continue':
         try:
             if not sp.current_playback()['is_playing']:
@@ -182,16 +206,19 @@ def get_song_information(id_to_song_information, id):
         print_and_clear(id_to_song_information, id, 'Repeating ...')
     elif x == 'queue':
         try:
-            sp.add_to_queue(id_to_song_information[id][5])
+            song_URI = id_to_song_information[id][5]
+            sp.add_to_queue(song_URI)
             print_and_clear(id_to_song_information, id, 'Adding to queue ...')
         except:
             print_and_clear(id_to_song_information, id, 'No active device.')
     elif x == 'current':
         if sp.current_user_playing_track() is not None:
             artist_name_list = []
-            for artist_URL in sp.current_user_playing_track()['item']['artists']:
-                artist_name_list.append(artist_URL['name'])
-            print(colored(str(sp.current_user_playing_track()['item']['name']), 'red') + ' by ' + colored(str(artist_name_list), 'blue') + '\n')
+            song_name = sp.current_user_playing_track()['item']['name']
+            for artist in sp.current_user_playing_track()['item']['artists']:
+                artist_name = artist['name']
+                artist_name_list.append(artist_name)
+            print(colored(song_name, 'red') + ' by ' + colored(str(artist_name_list), 'blue') + '\n')
             get_song_information(id_to_song_information, id)
         else:
             print('No song is currently playing.' + '\n')
@@ -209,10 +236,9 @@ def get_song_information(id_to_song_information, id):
         except:
             print_and_clear(id_to_song_information, id, 'No active device.')
     elif x == 'recent':
-        # TODO
-        for song in sp.current_user_recently_played():
-            print(song)
-        print(sp.current_user_recently_played())
+        # TODO: make list
+        for song in sp.current_user_recently_played(10)['items']:
+            print(colored(str(song['track']['name']), 'red') + ' by ' + colored(str(song['track']['artists'][0]['name']), 'blue') + ', id: ' + colored(song['track']['id'], 'green'))
     elif x == 'redo':
         main()
     elif x == 'quit':
@@ -245,7 +271,7 @@ def populate_song_information_list(song, id_to_song_information):
     id_to_song_information[song['id']].append(song['album']['images'][0]['url'])
 
 def get_song_information_helper(id_to_song_information, id, index):
-    print(colored(str(id_to_song_information[id][index]), 'grey', on_color = 'on_white') + '\n')
+    print(colored(' ' + str(id_to_song_information[id][index]) + ' ', 'grey', on_color = 'on_white') + '\n')
     get_song_information(id_to_song_information, id)
 
 def print_and_clear(id_to_song_information, id, message):
