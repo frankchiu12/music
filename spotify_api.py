@@ -143,7 +143,6 @@ def get_song_information(id):
         total_followers = str(sp.artist(artist_URL)['followers']['total'])
         genre_list = str(sp.artist(artist_URL)['genres'])
         popularity = str(sp.artist(artist_URL)['popularity'])
-
         print(colored('Total Followers: ', 'red') + total_followers)
         print(colored('Genres: ', 'yellow') + genre_list)
         print(colored('Popularity: ', 'green') + popularity)
@@ -160,10 +159,8 @@ def get_song_information(id):
             co_artist_list = []
             main_artist = sp.track(id)['artists'][0]['name']
             song_name = track['name']
-
             if counter not in counter_to_song_name_and_main_artist:
                 counter_to_song_name_and_main_artist[counter] = song_name + ' ' + main_artist
-
             for co_artist in track['artists']:
                 co_artist_list.append(co_artist['name'])
             if main_artist in co_artist_list:
@@ -179,7 +176,6 @@ def get_song_information(id):
         for album in sp.artist_albums(artist_URL)['items']:
             album_name = album['name']
             album_total_track = str(album['total_tracks'])
-
             print(str(counter) + '. ' + colored(album_name, 'cyan') + colored(' with ', 'grey') + album_total_track + ' song(s)')
             counter += 1
         print('')
@@ -206,7 +202,6 @@ def get_song_information(id):
         artist_list = []
         for artist in sp.track(id)['artists']:
             artist_list.append(artist['name'])
-
         sp.start_playback(device_id = 'bddcb19206692c58a23c8c88a13144e1d7e4541e', uris = song_URI_list)
         print_and_clear(id, 'Playing ' + colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ' ...')
 
@@ -278,13 +273,11 @@ def get_song_information(id):
     elif x == 'user info':
         display_name = sp.current_user()['display_name']
         followers = str(sp.current_user()['followers']['total'])
-
         print(colored('Display Name: ', 'red') + display_name)
         print(colored('Followers: ', 'yellow') + followers)
         print(sp.currently_playing())
         print(sp.track(id))
         print('')
-
         get_song_information(id)
 
     elif x == 'recent':
@@ -332,15 +325,14 @@ def search_helper(x, external_search):
     id_to_song_information = {}
     for song in search['items']:
         populate_song_information_list(song, id_to_song_information)
-
     print('\033c', end = None)
+
     counter = 1
     counter_to_list = {}
     for id, song_information in id_to_song_information.items():
         song_name = song_information[0]
         artist_list = str(song_information[1])
         id = str(id)
-
         colored_description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + colored(id, 'green')
         description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + id
         if external_search:
@@ -349,7 +341,6 @@ def search_helper(x, external_search):
             counter_to_list[counter] = description
         counter += 1
     print('')
-
     choose_song(counter_to_list, external_search)
 
 def get_song_information_helper(id, information):
