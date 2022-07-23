@@ -321,10 +321,10 @@ def populate_song_information_list(song, id_to_song_information):
     if song['id'] not in id_to_song_information:
         id_to_song_information[song['id']] = []
     id_to_song_information[song['id']].append(song['name'])
-    artist_name_list = []
+    artist_list = []
     for artist in song['artists']:
-        artist_name_list.append(artist['name'])
-    id_to_song_information[song['id']].append(artist_name_list)
+        artist_list.append(artist['name'])
+    id_to_song_information[song['id']].append(artist_list)
 
 def search_helper(x, external_search):
     search = (sp.search(q = x, type = 'track', limit = 10))['tracks']
@@ -382,24 +382,7 @@ def volume(id):
     get_song_information(id)
 
 def toggle(id):
-    x = input('    toggle> ')
-
-    if x.isdigit() and 0 <= int(x) <= 100:
-        x = int(x)
-    elif x.isdigit():
-        print('\n' + 'The volume inputted is out of range!' +'\n')
-        volume(id)
-    elif x == '!keep':
-        print('')
-        get_song_information(id)
-    else:
-        print('\n' + 'Invalid command!' +'\n')
-        get_song_information(id)
-
-    print('\033c', end = None)
-    print('Setting the timestamp to: ' + colored(' ' + str(x) + ' ', on_color = 'on_white')  + '\n')
-    sp.volume(x)
-    get_song_information(id)
+    pass
 
 def internal_search(id, counter_to_song_name_and_main_artist):
     x = input('internal_search> ')
