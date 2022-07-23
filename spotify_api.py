@@ -6,6 +6,8 @@ import webbrowser
 import sys, os
 from termcolor import colored
 
+print('\033c', end=None)
+
 username = 'chiusiun'
 scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played'
 client_id = '3aa6dc3eea4b485497c73da406f11802'
@@ -31,7 +33,7 @@ def initial_search():
 
     if x == '!voice':
         with mic as source:
-            os.system('cls' if os.name == 'nt' else 'clear')
+            print('\033c', end=None)
             print('Listening ...' + '\n')
             audio = r.listen(source)
             x = r.recognize_google(audio)
@@ -56,7 +58,7 @@ def choose_song(id_to_song_information, counter_to_list, external_search):
         if x.isdigit() and 1 <= int(x) <= 10:
             id = counter_to_list[int(x)].partition('id: ')[2]
             description = counter_to_list[int(x)].partition(', id: ')[0]
-            os.system('cls' if os.name == 'nt' else 'clear')
+            print('\033c', end=None)
             print('Selected song (' + description + ')' + '\n')
             get_song_information(id_to_song_information, id)
         elif x.isdigit():
@@ -65,7 +67,7 @@ def choose_song(id_to_song_information, counter_to_list, external_search):
         elif x == 'redo':
             main()
         elif x == 'quit':
-            os.system('cls' if os.name == 'nt' else 'clear')
+            print('\033c', end=None)
             return
         else:
             print('\n' + 'Invalid command!' + '\n')
@@ -73,7 +75,7 @@ def choose_song(id_to_song_information, counter_to_list, external_search):
     else:
         id = counter_to_list[1].partition('id: ')[2]
         description = counter_to_list[1].partition(', id: ')[0]
-        os.system('cls' if os.name == 'nt' else 'clear')
+        print('\033c', end=None)
         print('Selected song (' + description + ')' + '\n')
         get_song_information(id_to_song_information, id)
 
@@ -250,14 +252,14 @@ def get_song_information(id_to_song_information, id):
     elif x == 'redo':
         main()
     elif x == 'quit':
-        os.system('cls' if os.name == 'nt' else 'clear')
+        print('\033c', end=None)
         return
     else:
         print('Invalid command!' + '\n')
         get_song_information(id_to_song_information, id)
 
 def clear_terminal():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    print('\033c', end=None)
     term_size = os.get_terminal_size()
     print('=' * term_size.columns + '\n')
 
@@ -285,7 +287,7 @@ def search_helper(x, external_search):
     for song in search['items']:
         populate_song_information_list(song, id_to_song_information)
 
-    os.system('cls' if os.name == 'nt' else 'clear')
+    print('\033c', end=None)
     counter = 1
     counter_to_list = {}
     for id, song_information in id_to_song_information.items():
@@ -309,7 +311,7 @@ def get_song_information_helper(id_to_song_information, id, index):
     get_song_information(id_to_song_information, id)
 
 def print_and_clear(id_to_song_information, id, message):
-    os.system('cls' if os.name == 'nt' else 'clear')
+    print('\033c', end=None)
     print(message + '\n')
     get_song_information(id_to_song_information, id)
 
@@ -328,7 +330,7 @@ def volume(id_to_song_information, id):
         print('\n' + 'Invalid command!' +'\n')
         get_song_information(id_to_song_information, id)
 
-    os.system('cls' if os.name == 'nt' else 'clear')
+    print('\033c', end=None)
     print('Setting the volume to: ' + colored(' ' + str(x) + ' ', on_color = 'on_white')  + '\n')
     sp.volume(x)
     get_song_information(id_to_song_information, id)
@@ -343,7 +345,7 @@ def internal_search(id_to_song_information, id, counter_to_song_name_and_main_ar
         print('\n' + 'The number inputted is outside of the result list size of 10!' +'\n')
         internal_search(id_to_song_information, id, counter_to_song_name_and_main_artist)
     elif x == '!back':
-        os.system('cls' if os.name == 'nt' else 'clear')
+        print('\033c', end=None)
         get_song_information(id_to_song_information, id)
     else:
         search_helper(x, True)
