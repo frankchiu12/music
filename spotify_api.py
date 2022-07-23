@@ -29,14 +29,14 @@ def main():
 def initial_search():
     x = input('search> ')
 
-    if x == '/voice':
+    if x == '!voice':
         with mic as source:
             os.system('cls' if os.name == 'nt' else 'clear')
             print('Listening ...' + '\n')
             audio = r.listen(source)
             x = r.recognize_google(audio)
 
-    if x == '/skip':
+    if x == '!skip':
         if sp.current_user_playing_track() is not None:
             id_to_song_information = {}
             song = sp.current_user_playing_track()['item']
@@ -46,29 +46,7 @@ def initial_search():
         else:
             print('\n' + 'No song currently playing.' + '\n')
     else:
-        search = (sp.search(q = x, type = 'track', limit = 10))['tracks']
-
-        id_to_song_information = {}
-        for song in search['items']:
-            populate_song_information_list(song, id_to_song_information)
-
-        os.system('cls' if os.name == 'nt' else 'clear')
-        counter = 1
-        counter_to_list = {}
-        for id, song_information in id_to_song_information.items():
-            song_name = song_information[0]
-            artist_list = str(song_information[1])
-            id = str(id)
-            
-            colored_description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + colored(id, 'green')
-            description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + id
-            print(str(counter) + '. ' + colored_description)
-            if counter not in counter_to_list:
-                counter_to_list[counter] = description
-            counter += 1
-        print('')
-
-        choose_song(id_to_song_information, counter_to_list)
+        search_helper(x)
 
 def choose_song(id_to_song_information, counter_to_list):
     x = input('song_number> ')
@@ -202,17 +180,7 @@ def get_song_information(id_to_song_information, id):
         except:
             print_and_clear(id_to_song_information, id, 'No active device.')
     elif x =='volume':
-        x = input('volume> ')
-
-        if x.isdigit() and 0 <= int(x) <= 100:
-            x = int(x)
-        elif x.isdigit():
-            print('\n' + 'The volume inputted is out of range!' +'\n')
-        elif x == 'keep':
-            get_song_information(id_to_song_information, id)
-
-        sp.volume(x)
-        get_song_information(id_to_song_information, id)
+        volume(id_to_song_information, id)
     elif x == 'loop':
         sp.repeat('track')
         print_and_clear(id_to_song_information, id, 'Repeating ...')
@@ -292,6 +260,31 @@ def populate_song_information_list(song, id_to_song_information):
     id_to_song_information[song['id']].append(song['album']['artists'][0]['external_urls']['spotify'])
     id_to_song_information[song['id']].append(song['album']['images'][0]['url'])
 
+def search_helper(x):
+    search = (sp.search(q = x, type = 'track', limit = 10))['tracks']
+
+    id_to_song_information = {}
+    for song in search['items']:
+        populate_song_information_list(song, id_to_song_information)
+
+    os.system('cls' if os.name == 'nt' else 'clear')
+    counter = 1
+    counter_to_list = {}
+    for id, song_information in id_to_song_information.items():
+        song_name = song_information[0]
+        artist_list = str(song_information[1])
+        id = str(id)
+        
+        colored_description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + colored(id, 'green')
+        description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + id
+        print(str(counter) + '. ' + colored_description)
+        if counter not in counter_to_list:
+            counter_to_list[counter] = description
+        counter += 1
+    print('')
+
+    choose_song(id_to_song_information, counter_to_list)
+
 def get_song_information_helper(id_to_song_information, id, index):
     print(colored(' ' + str(id_to_song_information[id][index]) + ' ', 'grey', on_color = 'on_white') + '\n')
     get_song_information(id_to_song_information, id)
@@ -299,6 +292,26 @@ def get_song_information_helper(id_to_song_information, id, index):
 def print_and_clear(id_to_song_information, id, message):
     os.system('cls' if os.name == 'nt' else 'clear')
     print(message + '\n')
+    get_song_information(id_to_song_information, id)
+
+def volume(id_to_song_information, id):
+    x = input('    volume> ')
+
+    if x.isdigit() and 0 <= int(x) <= 100:
+        x = int(x)
+    elif x.isdigit():
+        print('\n' + 'The volume inputted is out of range!' +'\n')
+        volume(id_to_song_information, id)
+    elif x == 'keep':
+        print('')
+        get_song_information(id_to_song_information, id)
+    else:
+        print('\n' + 'Invalid command!' +'\n')
+        get_song_information(id_to_song_information, id)
+
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print('Setting the volume to: ' + colored(' ' + str(x) + ' ', on_color = 'on_white')  + '\n')
+    sp.volume(x)
     get_song_information(id_to_song_information, id)
 
 def block_print():
