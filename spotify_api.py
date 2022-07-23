@@ -42,7 +42,7 @@ def initial_search():
             clear_terminal()
             get_song_information(id_to_song_information, song['id'])
         else:
-            print('\n' + 'No active device.' + '\n')
+            print('\n' + 'No song currently playing.' + '\n')
     else:
         search = (sp.search(q = x, type = 'track', limit = 10))['tracks']
 
@@ -101,7 +101,7 @@ def get_song_information(id_to_song_information, id):
     elif x == 'open':
         webbrowser.open(id_to_song_information[id][6])
         print_and_clear(id_to_song_information, id, 'Opening song ...')
-    elif x  == 'album':
+    elif x  == 'album page':
         webbrowser.open(id_to_song_information[id][7])
         print_and_clear(id_to_song_information, id, 'Opening album ...')
     elif x == 'artist page':
@@ -110,6 +110,38 @@ def get_song_information(id_to_song_information, id):
     elif x == 'image':
         webbrowser.open(id_to_song_information[id][9])
         print_and_clear(id_to_song_information, id, 'Opening image ...')
+    elif x == 'artist info':
+        artist_URL = id_to_song_information[id][8]
+
+        print(colored('Followers: ', 'red') + str(sp.artist(artist_URL)['followers']['total']))
+        print(colored('Genres: ', 'yellow') + str(sp.artist(artist_URL)['genres']))
+        print(colored('Popularity: ', 'green') + str(sp.artist(artist_URL)['popularity']))
+
+        related_artist_list = []
+        for related_artist in sp.artist_related_artists(artist_URL)['artists']:
+            related_artist_list.append(related_artist['name'])
+        print(colored('Related Artists: ', 'blue') + str(related_artist_list))
+        print(colored('Top Tracks:', 'magenta'))
+
+        counter = 1
+        for track in sp.artist_top_tracks(artist_URL)['tracks']:
+            co_artist_list = []
+            for co_artist in track['artists']:
+                co_artist_list.append(co_artist['name'])
+            if id_to_song_information[id][1] in co_artist_list:
+                co_artist_list.remove(id_to_song_information[id][1])
+            print(str(counter) + '. ' + colored(track['name'], 'cyan') + colored(' with ', 'grey') + str(co_artist_list))
+            counter += 1
+
+        print(colored('Albums:', attrs = ['bold', 'underline']))
+
+        counter = 1
+        for album in sp.artist_albums(artist_URL)['items']:
+            print(str(counter) + '. ' + colored(album['name'], 'cyan') + colored(' with ', 'grey') + str(album['total_tracks']) + ' song(s)')
+            counter += 1
+
+        print('')
+        get_song_information(id_to_song_information, id)
     elif x == 'lyrics':
         song = id_to_song_information[id][0]
         if ' - From' in song:
@@ -157,8 +189,8 @@ def get_song_information(id_to_song_information, id):
     elif x == 'current':
         if sp.current_user_playing_track() is not None:
             artist_name_list = []
-            for artist in sp.current_user_playing_track()['item']['artists']:
-                artist_name_list.append(artist['name'])
+            for artist_URL in sp.current_user_playing_track()['item']['artists']:
+                artist_name_list.append(artist_URL['name'])
             print(colored(str(sp.current_user_playing_track()['item']['name']), 'red') + ' by ' + colored(str(artist_name_list), 'blue') + '\n')
             get_song_information(id_to_song_information, id)
         else:
@@ -178,6 +210,8 @@ def get_song_information(id_to_song_information, id):
             print_and_clear(id_to_song_information, id, 'No active device.')
     elif x == 'recent':
         # TODO
+        for song in sp.current_user_recently_played():
+            print(song)
         print(sp.current_user_recently_played())
     elif x == 'redo':
         main()
@@ -211,7 +245,7 @@ def populate_song_information_list(song, id_to_song_information):
     id_to_song_information[song['id']].append(song['album']['images'][0]['url'])
 
 def get_song_information_helper(id_to_song_information, id, index):
-    print(str(id_to_song_information[id][index]) + '\n')
+    print(colored(str(id_to_song_information[id][index]), 'grey', on_color = 'on_white') + '\n')
     get_song_information(id_to_song_information, id)
 
 def print_and_clear(id_to_song_information, id, message):
@@ -229,5 +263,3 @@ if __name__ == '__main__':
     main()
 
 # look through https://spotipy.readthedocs.io/en/2.12.0/
-
-# print(sp.artist(id_to_song_information[id][8])), artist_related_artists, artist_top_tracks
