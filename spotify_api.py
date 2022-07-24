@@ -107,8 +107,7 @@ def get_song_information(id):
 
     elif x == 'duration':
         duration = sp.track(id)['duration_ms']/60000
-        frac, whole = math.modf(duration)
-        duration = str(int(whole)) + ':' + str(round(frac, 2)).partition('.')[2]
+        duration = parse_time(duration)
         get_song_information_helper(id, duration)
 
     elif x == 'explicit':
@@ -232,6 +231,18 @@ def get_song_information(id):
     elif x == 'loop':
         sp.repeat('track')
         print_and_clear(id, 'Repeating ...')
+
+    elif x == 'timestamp':
+        timestamp_int = sp.current_user_playing_track()['progress_ms']
+        duration_int = sp.track(id)['duration_ms']
+        timestamp_string = sp.current_user_playing_track()['progress_ms']/60000
+        timestamp_string = parse_time(timestamp_string)
+        duration_string = sp.track(id)['duration_ms']/60000
+        duration_string = parse_time(duration_string)
+        print(colored(' ' + timestamp_string + '/' + duration_string + ' ', 'grey', on_color = 'on_white') + '\n')
+        print_progress_bar(timestamp_int, duration_int, prefix = 'Progress:', suffix = 'Complete', length = 50)
+        print('\n')
+        get_song_information(id)
 
     elif x == 'toggle':
         pass
@@ -391,6 +402,17 @@ def volume(id):
     print('Setting the volume to: ' + colored(' ' + str(x) + ' ', on_color = 'on_white')  + '\n')
     sp.volume(x)
     get_song_information(id)
+
+def parse_time(time):
+    frac, whole = math.modf(time)
+    time = str(int(whole)) + ':' + str(round(frac, 2)).partition('.')[2]
+    return time
+
+def print_progress_bar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', print_end = '\r'):
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filled_length = int(length * iteration // total)
+    bar = fill * filled_length + '-' * (length - filled_length)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = print_end)
 
 def toggle(id):
     pass
