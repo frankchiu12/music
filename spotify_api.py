@@ -2,8 +2,8 @@ import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
 import speech_recognition as sr
-import webbrowser
 import sys, os
+import webbrowser
 from termcolor import colored
 import math
 
@@ -54,13 +54,14 @@ def choose_song(counter_to_list, external_search):
         x = input('song_number> ')
 
         if x.isdigit() and 1 <= int(x) <= 10:
+            # TODO: helper?
             id = counter_to_list[int(x)].partition('id: ')[2]
             description = counter_to_list[int(x)].partition(', id: ')[0]
             print('\033c', end = None)
             print('Selected song (' + description + ')' + '\n')
             get_song_information(id)
         elif x.isdigit():
-            print('\n' + 'The number inputted is outside of the result list size of 10!' +'\n')
+            print('\n' + 'The number inputted is outside of the result list size of 10.' +'\n')
             choose_song(counter_to_list, True)
         elif x == 'redo':
             main()
@@ -92,6 +93,10 @@ def get_song_information(id):
         print(colored(' ' + str(artist_list) + ' ', 'grey', on_color = 'on_white') + '\n')
         get_song_information(id)
 
+    elif x == 'popularity':
+        popularity = str(sp.track(id)['popularity'])
+        get_song_information_helper(id, popularity)
+
     elif x == 'album name':
         album_name = sp.track(id)['album']['name']
         get_song_information_helper(id, album_name)
@@ -100,15 +105,77 @@ def get_song_information(id):
         release_date = sp.track(id)['album']['release_date']
         get_song_information_helper(id, release_date)
 
-    elif x == 'popularity':
-        popularity = str(sp.track(id)['popularity'])
-        get_song_information_helper(id, popularity)
-
     elif x == 'duration':
         duration = sp.track(id)['duration_ms']/60000
         frac, whole = math.modf(duration)
         duration = str(int(whole)) + ':' + str(round(frac, 2)).partition('.')[2]
         get_song_information_helper(id, duration)
+
+    elif x == 'explicit':
+        explicit = sp.track(id)['explicit']
+        if explicit:
+            print(colored(str(explicit), 'red') + '\n')
+        else:
+            print(colored(str(explicit), 'green') + '\n')
+        get_song_information(id)
+
+    elif x == 'artist info':
+        artist_URL = sp.track(id)['album']['artists'][0]['external_urls']['spotify']
+        popularity = str(sp.artist(artist_URL)['popularity'])
+        total_followers = str(sp.artist(artist_URL)['followers']['total'])
+        genre_list = str(sp.artist(artist_URL)['genres'])
+        print(colored('Popularity: ', 'red') + popularity)
+        print(colored('Total Followers: ', 'yellow') + total_followers)
+        print(colored('Genres: ', 'green') + genre_list)
+
+        related_artist_list = []
+        for related_artist in sp.artist_related_artists(artist_URL)['artists']:
+            related_artist_list.append(related_artist['name'])
+        print(colored('Related Artists: ', 'blue') + str(related_artist_list))
+
+        print(colored('Top Tracks:', 'magenta'))
+        counter_to_song_name_and_main_artist = {}
+        counter = 1
+        for track in sp.artist_top_tracks(artist_URL)['tracks']:
+            song_name = track['name']
+            main_artist = sp.track(id)['artists'][0]['name']
+            co_artist_list = []
+            if counter not in counter_to_song_name_and_main_artist:
+                counter_to_song_name_and_main_artist[counter] = song_name + ' ' + main_artist
+            for co_artist in track['artists']:
+                co_artist_list.append(co_artist['name'])
+            if main_artist in co_artist_list:
+                co_artist_list.remove(main_artist)
+            if len(co_artist_list) != 0:
+                print(str(counter) + '. ' + colored(song_name, 'cyan') + colored(' with ', 'grey') + str(co_artist_list))
+            else:
+                print(str(counter) + '. ' + colored(song_name, 'cyan'))
+            counter += 1
+
+        print(colored('Albums:', attrs = ['bold', 'underline', 'dark']))
+        counter = 1
+        for album in sp.artist_albums(artist_URL)['items']:
+            album_name = album['name']
+            album_total_tracks = str(album['total_tracks'])
+            print(str(counter) + '. ' + colored(album_name, 'cyan') + colored(' with ', 'grey') + album_total_tracks + ' song(s)')
+            counter += 1
+        print('')
+        internal_search(id, counter_to_song_name_and_main_artist)
+
+    elif x == 'lyrics':
+        song_name = sp.track(id)['name']
+        if ' - From' in song_name:
+            song_name = song_name.partition(' - From')[0]
+        if ' (feat.' in song_name:
+            song_name = song_name.partition(' (feat.')[0]
+        print('Searching ...' + '\n')
+        block_print()
+        song_name = genius.search_song(song_name, sp.track(id)['artists'][0])
+        enable_print()
+        if song_name is None:
+            print_and_clear(id, 'No lyrics found.')
+        else:
+            print_and_clear(id, song_name.lyrics)
 
     elif x == 'open':
         song_URL = sp.track(id)['external_urls']['spotify']
@@ -129,72 +196,6 @@ def get_song_information(id):
         image_URL = sp.track(id)['album']['images'][0]['url']
         webbrowser.open(image_URL)
         print_and_clear(id, 'Opening image ...')
-
-    elif x == 'explicit':
-        explicit = sp.track(id)['explicit']
-        if explicit:
-            print(colored(str(explicit), 'red') + '\n')
-        else:
-            print(colored(str(explicit), 'green') + '\n')
-        get_song_information(id)
-
-    elif x == 'artist info':
-        artist_URL = sp.track(id)['album']['artists'][0]['external_urls']['spotify']
-        total_followers = str(sp.artist(artist_URL)['followers']['total'])
-        genre_list = str(sp.artist(artist_URL)['genres'])
-        popularity = str(sp.artist(artist_URL)['popularity'])
-        print(colored('Total Followers: ', 'red') + total_followers)
-        print(colored('Genres: ', 'yellow') + genre_list)
-        print(colored('Popularity: ', 'green') + popularity)
-
-        related_artist_list = []
-        for related_artist in sp.artist_related_artists(artist_URL)['artists']:
-            related_artist_list.append(related_artist['name'])
-        print(colored('Related Artists: ', 'blue') + str(related_artist_list))
-        print(colored('Top Tracks:', 'magenta'))
-
-        counter_to_song_name_and_main_artist = {}
-        counter = 1
-        for track in sp.artist_top_tracks(artist_URL)['tracks']:
-            co_artist_list = []
-            main_artist = sp.track(id)['artists'][0]['name']
-            song_name = track['name']
-            if counter not in counter_to_song_name_and_main_artist:
-                counter_to_song_name_and_main_artist[counter] = song_name + ' ' + main_artist
-            for co_artist in track['artists']:
-                co_artist_list.append(co_artist['name'])
-            if main_artist in co_artist_list:
-                co_artist_list.remove(main_artist)
-            if len(co_artist_list) != 0:
-                print(str(counter) + '. ' + colored(song_name, 'cyan') + colored(' with ', 'grey') + str(co_artist_list))
-            else:
-                print(str(counter) + '. ' + colored(song_name, 'cyan'))
-            counter += 1
-        print(colored('Albums:', attrs = ['bold', 'underline']))
-
-        counter = 1
-        for album in sp.artist_albums(artist_URL)['items']:
-            album_name = album['name']
-            album_total_track = str(album['total_tracks'])
-            print(str(counter) + '. ' + colored(album_name, 'cyan') + colored(' with ', 'grey') + album_total_track + ' song(s)')
-            counter += 1
-        print('')
-        internal_search(id, counter_to_song_name_and_main_artist)
-
-    elif x == 'lyrics':
-        song_name = sp.track(id)['name']
-        if ' - From' in song_name:
-            song_name = song_name.partition(' - From')[0]
-        if ' (feat.' in song_name:
-            song_name = song_name.partition(' (feat.')[0]
-        print('Searching ...' + '\n')
-        block_print()
-        song_name = genius.search_song(song_name, sp.track(id)['artists'][0])
-        enable_print()
-        if song_name is None:
-            print_and_clear(id, 'No lyrics found.')
-        else:
-            print_and_clear(id, song_name.lyrics)
 
     elif x == 'play':
         song_URI_list = [sp.track(id)['uri']]
@@ -245,8 +246,8 @@ def get_song_information(id):
 
     elif x == 'current':
         if sp.current_user_playing_track() is not None:
-            artist_list = []
             song_name = sp.current_user_playing_track()['item']['name']
+            artist_list = []
             for artist in sp.current_user_playing_track()['item']['artists']:
                 artist_name = artist['name']
                 artist_list.append(artist_name)
@@ -259,40 +260,43 @@ def get_song_information(id):
     elif x == 'next':
         try:
             sp.next_track()
-            print_and_clear(id, 'Skipping to next ...')
+            next_song_id = sp.current_user_playing_track()['item']['id']
+            print_and_clear(next_song_id, 'Skipping to next ...')
         except:
             print_and_clear(id, 'No active device.')
 
     elif x == 'previous':
         try:
             sp.previous_track()
-            print_and_clear(id, 'Going back to previous ...')
+            previous_song_id = sp.current_user_playing_track()['item']['id']
+            print_and_clear(previous_song_id, 'Going back to previous ...')
         except:
             print_and_clear(id, 'No active device.')
 
     elif x == 'user info':
+        # TODO
         display_name = sp.current_user()['display_name']
         followers = str(sp.current_user()['followers']['total'])
         print(colored('Display Name: ', 'red') + display_name)
         print(colored('Followers: ', 'yellow') + followers)
-        print(sp.currently_playing())
-        print(sp.track(id))
         print('')
         get_song_information(id)
 
     elif x == 'recent':
-        # TODO: internal search
         counter = 1
-        for song_name in sp.current_user_recently_played(10)['items']:
-            song_name = song_name['track']['name']
-            song_ID = song_name['track']['id']
+        counter_to_song_name_and_main_artist = {}
+        for song in sp.current_user_recently_played(10)['items']:
+            song_name = song['track']['name']
+            song_ID = song['track']['id']
             artist_list = []
-            for artist in song_name['track']['artists']:
+            for artist in song['track']['artists']:
                 artist_list.append(artist['name'])
+            if counter not in counter_to_song_name_and_main_artist:
+                counter_to_song_name_and_main_artist[counter] = song_name + artist_list[0]
             print(str(counter) + '. ' + colored(song_name, 'red') + ' by ' + colored(str(artist_list), 'blue') + ', id: ' + colored(song_ID, 'green'))
             counter += 1
         print('')
-        get_song_information(id)
+        internal_search(id, counter_to_song_name_and_main_artist)
 
     elif x == 'redo':
         main()
@@ -340,6 +344,7 @@ def search_helper(x, external_search):
         if counter not in counter_to_list:
             counter_to_list[counter] = description
         counter += 1
+
     print('')
     choose_song(counter_to_list, external_search)
 
@@ -351,6 +356,21 @@ def print_and_clear(id, message):
     print('\033c', end = None)
     print(message + '\n')
     get_song_information(id)
+
+def internal_search(id, counter_to_song_name_and_main_artist):
+    x = input('internal_search> ')
+
+    if x.isdigit() and 1 <= int(x) <= 10:
+        x = counter_to_song_name_and_main_artist[int(x)]
+        search_helper(x, False)
+    elif x.isdigit():
+        print('\n' + 'The number inputted is outside of the result list size of 10!' +'\n')
+        internal_search(id, counter_to_song_name_and_main_artist)
+    elif x == '!back':
+        print('\033c', end = None)
+        get_song_information(id)
+    else:
+        search_helper(x, True)
 
 def volume(id):
     x = input('    volume> ')
@@ -375,21 +395,6 @@ def volume(id):
 def toggle(id):
     pass
 
-def internal_search(id, counter_to_song_name_and_main_artist):
-    x = input('internal_search> ')
-
-    if x.isdigit() and 1 <= int(x) <= 10:
-        x = counter_to_song_name_and_main_artist[int(x)]
-        search_helper(x, False)
-    elif x.isdigit():
-        print('\n' + 'The number inputted is outside of the result list size of 10!' +'\n')
-        internal_search(id, counter_to_song_name_and_main_artist)
-    elif x == '!back':
-        print('\033c', end = None)
-        get_song_information(id)
-    else:
-        search_helper(x, True)
-
 def block_print():
     sys.stdout = open(os.devnull, 'w')
 
@@ -399,4 +404,4 @@ def enable_print():
 if __name__ == '__main__':
     main()
 
-# look through https://spotipy.readthedocs.io/en/2.12.0/, playlist methods, timeline using progress_ms, next = select it
+# look through https://spotipy.readthedocs.io/en/2.12.0/, playlist methods, timeline using progress_ms, try catch at end
