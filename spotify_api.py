@@ -1,5 +1,3 @@
-from email.policy import HTTP
-from scipy.fft import idct
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
@@ -582,4 +580,4 @@ def enable_print():
 if __name__ == '__main__':
     main()
 
-# look through https://spotipy.readthedocs.io/en/2.12.0/, try-catch, type (album)
+# look through https://spotipy.readthedocs.io/en/2.12.0/, try-catch, type (album), command only once for album
