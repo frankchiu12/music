@@ -106,7 +106,7 @@ def get_song_information(id):
         get_song_information_helper(id, release_date)
 
     elif x == 'duration':
-        duration = sp.track(id)['duration_ms']/60000
+        duration = sp.track(id)['duration_ms']
         duration = parse_time(duration)
         get_song_information_helper(id, duration)
 
@@ -235,17 +235,15 @@ def get_song_information(id):
     elif x == 'timestamp':
         timestamp_int = sp.current_user_playing_track()['progress_ms']
         duration_int = sp.track(id)['duration_ms']
-        timestamp_string = sp.current_user_playing_track()['progress_ms']/60000
-        timestamp_string = parse_time(timestamp_string)
-        duration_string = sp.track(id)['duration_ms']/60000
-        duration_string = parse_time(duration_string)
+        timestamp_string = parse_time(timestamp_int)
+        duration_string = parse_time(duration_int)
         print(colored(' ' + timestamp_string + '/' + duration_string + ' ', 'grey', on_color = 'on_white') + '\n')
         print_progress_bar(timestamp_int, duration_int, prefix = 'Progress:', suffix = 'Complete', length = 50)
         print('\n')
         get_song_information(id)
 
     elif x == 'toggle':
-        pass
+        toggle(id)
 
     elif x == 'queue':
         try:
@@ -403,9 +401,12 @@ def volume(id):
     sp.volume(x)
     get_song_information(id)
 
-def parse_time(time):
-    frac, whole = math.modf(time)
-    time = str(int(whole)) + ':' + str(round(frac, 2)).partition('.')[2]
+def parse_time(ms):
+    s, ms = divmod(ms, 1000)
+    m, s = divmod(s, 60)
+    if s == 0:
+        s = '00'
+    time = str(m) + ':' + str(s)
     return time
 
 def print_progress_bar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', print_end = '\r'):
@@ -415,7 +416,37 @@ def print_progress_bar (iteration, total, prefix = '', suffix = '', decimals = 1
     print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = print_end)
 
 def toggle(id):
-    pass
+    x = input('    timestamp> ')
+
+    if x != '!keep':
+        try:
+            x = x.partition(':')
+            minute = int(x[0])
+            second = int(x[2])
+            x = (minute * 60 + second) * 1000
+        except:
+            print('\n' + 'Invalid command!' +'\n')
+            get_song_information(id)
+    else:
+        print('')
+        get_song_information(id)
+
+    if 0 <= x <= sp.track(id)['duration_ms']:
+        pass
+    elif isinstance(x, int):
+        print('\n' + 'The timestamp inputted is out of range!' +'\n')
+        toggle(id)
+    else:
+        print('\n' + 'Invalid command!' +'\n')
+        get_song_information(id)
+
+    sp.seek_track(x)
+    print('\033c', end = None)
+    print('Setting the timestamp to: ' + colored(' ' + parse_time(x) + ' ', on_color = 'on_white')  + '\n')
+    duration_int = sp.track(id)['duration_ms']
+    print_progress_bar(x, duration_int, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    print('\n')
+    get_song_information(id)
 
 def block_print():
     sys.stdout = open(os.devnull, 'w')
@@ -426,4 +457,4 @@ def enable_print():
 if __name__ == '__main__':
     main()
 
-# look through https://spotipy.readthedocs.io/en/2.12.0/, playlist methods, timeline using progress_ms, try catch at end
+# look through https://spotipy.readthedocs.io/en/2.12.0/, playlist methods, try catch at end
