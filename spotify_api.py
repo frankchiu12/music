@@ -1,4 +1,5 @@
 from email.policy import HTTP
+from scipy.fft import idct
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
@@ -45,7 +46,9 @@ def initial_search():
             clear_terminal()
             get_information(song['id'], type)
         else:
+            print('\033c', end = None)
             print('\n' + 'No song currently playing.' + '\n')
+            return
     else:
         search_helper(x, True)
 
@@ -89,43 +92,65 @@ def get_information(id, type):
             print(colored(' ' + sp.album(id)['name'] + ' ', 'grey', on_color = 'on_white') + '\n')
         get_information(id, type)
 
-    elif x == 'artist name':
+    elif x == 'artist':
         artist_list = []
         if type == 'track':
             for artist in sp.track(id)['artists']:
                 artist_list.append(artist['name'])
             print(colored(' ' + str(artist_list) + ' ', 'grey', on_color = 'on_white') + '\n')
         elif type == 'album':
-            pass
+            for artist in sp.album(id)['artists']:
+                artist_list.append(artist['name'])
+            print(colored(' ' + str(artist_list) + ' ', 'grey', on_color = 'on_white') + '\n')       
         get_information(id, type)
 
     elif x == 'popularity':
-        popularity = str(sp.track(id)['popularity'])
+        if type == 'track':
+            popularity = str(sp.track(id)['popularity'])
+        elif type == 'album':
+            popularity = str(sp.album(id)['popularity'])
         get_information_helper(id, popularity, type)
 
     elif x == 'album name':
-        album_name = sp.track(id)['album']['name']
-        get_information_helper(id, album_name, type)
+        if type != 'track':
+            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
+            get_information(id, type)
+        else:
+            album_name = sp.track(id)['album']['name']
+            get_information_helper(id, album_name, type)
 
     elif x == 'release date':
-        release_date = sp.track(id)['album']['release_date']
+        if type == 'track':
+            release_date = sp.track(id)['album']['release_date']
+        elif type == 'album':
+            release_date = sp.album(id)['release_date']
         get_information_helper(id, release_date, type)
 
     elif x == 'duration':
-        duration = sp.track(id)['duration_ms']
-        duration = parse_time(duration)
-        get_information_helper(id, duration, type)
+        if type != 'track':
+            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
+            get_information(id, type)
+        else:
+            duration = sp.track(id)['duration_ms']
+            duration = parse_time(duration)
+            get_information_helper(id, duration, type)
 
     elif x == 'explicit':
-        explicit = sp.track(id)['explicit']
-        if explicit:
-            print(colored(str(explicit), 'red') + '\n')
+        if type != 'track':
+            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
         else:
-            print(colored(str(explicit), 'green') + '\n')
+            explicit = sp.track(id)['explicit']
+            if explicit:
+                print(colored(str(explicit), 'red') + '\n')
+            else:
+                print(colored(str(explicit), 'green') + '\n')
         get_information(id, type)
 
     elif x == 'artist info':
-        artist_URL = sp.track(id)['album']['artists'][0]['external_urls']['spotify']
+        if type == 'track':
+            artist_URL = sp.track(id)['album']['artists'][0]['external_urls']['spotify']
+        elif type == 'album':
+            artist_URL = sp.album(id)['artists'][0]['external_urls']['spotify']
         popularity = str(sp.artist(artist_URL)['popularity'])
         total_followers = str(sp.artist(artist_URL)['followers']['total'])
         genre_list = str(sp.artist(artist_URL)['genres'])
@@ -143,7 +168,7 @@ def get_information(id, type):
         counter = 1
         for track in sp.artist_top_tracks(artist_URL)['tracks']:
             song_name = track['name']
-            main_artist = sp.track(id)['artists'][0]['name']
+            main_artist = track['artists'][0]['name']
             co_artist_list = []
             if counter not in counter_to_song_name_and_main_artist:
                 counter_to_song_name_and_main_artist[counter] = song_name + ' ' + main_artist
@@ -168,48 +193,77 @@ def get_information(id, type):
         internal_search(id, counter_to_song_name_and_main_artist, type)
 
     elif x == 'lyrics':
-        song_name = sp.track(id)['name']
-        if ' - From' in song_name:
-            song_name = song_name.partition(' - From')[0]
-        if ' (feat.' in song_name:
-            song_name = song_name.partition(' (feat.')[0]
-        print('Searching ...' + '\n')
-        block_print()
-        song_name = genius.search_song(song_name, sp.track(id)['artists'][0]['name'])
-        enable_print()
-        if song_name is None:
-            print_and_clear(id, 'No lyrics found.', type)
+        if type != 'track':
+            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
+            get_information(id, type)
         else:
-            print_and_clear(id, song_name.lyrics, type)
+            song_name = sp.track(id)['name']
+            if ' - From' in song_name:
+                song_name = song_name.partition(' - From')[0]
+            if ' (feat.' in song_name:
+                song_name = song_name.partition(' (feat.')[0]
+            print('Searching ...' + '\n')
+            block_print()
+            song_name = genius.search_song(song_name, sp.track(id)['artists'][0]['name'])
+            enable_print()
+            if song_name is None:
+                print_and_clear(id, 'No lyrics found.', type)
+            else:
+                print_and_clear(id, song_name.lyrics, type)
 
-    elif x == 'open':
-        song_URL = sp.track(id)['external_urls']['spotify']
-        webbrowser.open(song_URL)
-        print_and_clear(id, 'Opening song ...', type)
+    elif x == 'track':
+        if type == 'track':
+            print('That command is reserved for items of type ' + colored('album or playlist', 'magenta') + '.' + '\n')
+            get_information(id, type)
+        else:
+            print(sp.album_tracks(id))
+            get_information(id, type)
+
+    elif x == 'song page':
+        if type != 'track':
+            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
+            get_information(id, type)
+        else:
+            song_URL = sp.track(id)['external_urls']['spotify']
+            webbrowser.open(song_URL)
+            print_and_clear(id, 'Opening song ...', type)
 
     elif x  == 'album page':
-        album_URL = sp.track(id)['album']['external_urls']['spotify']
+        if type == 'track':
+            album_URL = sp.track(id)['album']['external_urls']['spotify']
+        elif type == 'album':
+            album_URL = sp.album(id)['external_urls']['spotify']
         webbrowser.open(album_URL)
         print_and_clear(id, 'Opening album ...', type)
 
     elif x == 'artist page':
-        artist_URL = sp.track(id)['album']['artists'][0]['external_urls']['spotify']
+        if type == 'track':
+            artist_URL = sp.track(id)['album']['artists'][0]['external_urls']['spotify']
+        elif type == 'album':
+            artist_URL = sp.album(id)['artists'][0]['external_urls']['spotify']
         webbrowser.open(artist_URL)
         print_and_clear(id, 'Opening artist page ...', type)
 
     elif x == 'image':
-        image_URL = sp.track(id)['album']['images'][0]['url']
+        if type == 'track':
+            image_URL = sp.track(id)['album']['images'][0]['url']
+        elif type == 'album':
+            image_URL = sp.album(id)['images'][0]['url']
         webbrowser.open(image_URL)
         print_and_clear(id, 'Opening image ...', type)
 
     elif x == 'play':
-        song_URI_list = [sp.track(id)['uri']]
-        song_name = sp.track(id)['name']
-        artist_list = []
-        for artist in sp.track(id)['artists']:
-            artist_list.append(artist['name'])
-        sp.start_playback(device_id = 'bddcb19206692c58a23c8c88a13144e1d7e4541e', uris = song_URI_list)
-        print_and_clear(id, 'Playing ' + colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ' ...', type)
+        if type != 'track':
+            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
+            get_information(id, type)
+        else:
+            song_URI_list = [sp.track(id)['uri']]
+            song_name = sp.track(id)['name']
+            artist_list = []
+            for artist in sp.track(id)['artists']:
+                artist_list.append(artist['name'])
+            sp.start_playback(device_id = 'bddcb19206692c58a23c8c88a13144e1d7e4541e', uris = song_URI_list)
+            print_and_clear(id, 'Playing ' + colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ' ...', type)
 
     elif x == 'continue':
         try:
@@ -239,13 +293,16 @@ def get_information(id, type):
         print_and_clear(id, 'Repeating ...', type)
 
     elif x == 'timestamp':
-        timestamp_int = sp.current_user_playing_track()['progress_ms']
-        duration_int = sp.track(id)['duration_ms']
-        timestamp_string = parse_time(timestamp_int)
-        duration_string = parse_time(duration_int)
-        print(colored(' ' + timestamp_string + '/' + duration_string + ' ', 'grey', on_color = 'on_white') + '\n')
-        print_progress_bar(timestamp_int, duration_int, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        print('\n')
+        if type != 'track':
+            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
+        else:
+            timestamp_int = sp.current_user_playing_track()['progress_ms']
+            duration_int = sp.track(id)['duration_ms']
+            timestamp_string = parse_time(timestamp_int)
+            duration_string = parse_time(duration_int)
+            print(colored(' ' + timestamp_string + '/' + duration_string + ' ', 'grey', on_color = 'on_white') + '\n')
+            print_progress_bar(timestamp_int, duration_int, prefix = 'Progress:', suffix = 'Complete', length = 50)
+            print('\n')
         get_information(id, type)
 
     elif x == 'toggle':
@@ -253,9 +310,13 @@ def get_information(id, type):
 
     elif x == 'queue':
         try:
-            song_URI = sp.track(id)['uri']
-            sp.add_to_queue(song_URI)
-            print_and_clear(id, 'Adding to queue ...', type)
+            if type != 'track':
+                print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
+                get_information(id, type)
+            else:
+                song_URI = sp.track(id)['uri']
+                sp.add_to_queue(song_URI)
+                print_and_clear(id, 'Adding to queue ...', type)
         except:
             print_and_clear(id, 'No active device.', type)
 
@@ -289,12 +350,16 @@ def get_information(id, type):
             print_and_clear(id, 'No active device.', type)
 
     elif x == 'save':
-        saved = sp.current_user_saved_tracks_contains([id])[0]
-        if saved:
-            print_and_clear(id, 'Already saved.', type)
+        if type != 'track':
+            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
+            get_information(id, type)
         else:
-            sp.current_user_saved_tracks_add([id])
-            print_and_clear(id, 'Saving ...', type)
+            saved = sp.current_user_saved_tracks_contains([id])[0]
+            if saved:
+                print_and_clear(id, 'Already saved.', type)
+            else:
+                sp.current_user_saved_tracks_add([id])
+                print_and_clear(id, 'Saving ...', type)
 
     elif x == 'user info':
         display_name = sp.current_user()['display_name']
@@ -308,7 +373,8 @@ def get_information(id, type):
         counter = 1
         for track in sp.current_user_top_tracks()['items']:
             song_name = track['name']
-            main_artist = sp.track(id)['artists'][0]['name']
+            # TODO
+            main_artist = track['artists'][0]['name']
             artist_list = []
             if counter not in counter_to_song_name_and_main_artist:
                 counter_to_song_name_and_main_artist[counter] = song_name + ' ' + main_artist
@@ -374,14 +440,21 @@ def populate_information_list(item, id_to_information):
     id_to_information[item['id']].append(artist_list)
 
 def search_helper(x, external_search):
-    if '!a' in x:
-        x = x.partition('!a ')[2]
+    if '/album ' in x:
+        x = x.partition('/album ')[2]
         search = (sp.search(q = x, type = 'album', limit = 10))['albums']
         type = 'album'
-    elif '!p' in x:
-        x = x.partition('!p ')[2]
+    elif '/playlist ' in x:
+        # TODO
+        x = x.partition('/playlist ')[2]
         search = (sp.search(q = x, type = 'playlist', limit = 10))['playlists']
         type = 'playlist'
+        print(search)
+    elif '/artist' in x:
+        # TODO: bypass but only one method
+        x = x.partition('/artist ')[2]
+        search = (sp.search(q = x, type = 'artist', limit = 10))
+        type = 'artist'
         print(search)
     else:
         search = (sp.search(q = x, type = 'track', limit = 10))['tracks']
@@ -509,4 +582,4 @@ def enable_print():
 if __name__ == '__main__':
     main()
 
-# look through https://spotipy.readthedocs.io/en/2.12.0/, try-catch, info clear, type (album)
+# look through https://spotipy.readthedocs.io/en/2.12.0/, try-catch, type (album)
