@@ -8,7 +8,7 @@ from termcolor import colored
 import math
 
 username = 'chiusiun'
-scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played'
+scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played user-top-read'
 client_id = '3aa6dc3eea4b485497c73da406f11802'
 client_secret = 'c08afd7602b740589ccf5198eb2982a2'
 redirect_URI = 'http://google.com/'
@@ -288,8 +288,25 @@ def get_song_information(id):
         followers = str(sp.current_user()['followers']['total'])
         print(colored('Display Name: ', 'red') + display_name)
         print(colored('Followers: ', 'yellow') + followers)
+        print(colored('User Top Tracks: ', 'green'))
+
+        counter_to_song_name_and_main_artist = {}
+        counter = 1
+        for track in sp.current_user_top_tracks()['items']:
+            song_name = track['name']
+            main_artist = sp.track(id)['artists'][0]['name']
+            artist_list = []
+            if counter not in counter_to_song_name_and_main_artist:
+                counter_to_song_name_and_main_artist[counter] = song_name + ' ' + main_artist
+            for artist in track['artists']:
+                artist_list.append(artist['name'])
+            print(str(counter) + '. ' + colored(song_name, 'cyan') + colored(' by ', 'grey') + str(artist_list))
+            counter += 1
+
+        print(sp.current_user_top_artists())
+        print(sp.current_user()) # link
         print('')
-        get_song_information(id)
+        internal_search(id, counter_to_song_name_and_main_artist)
 
     elif x == 'recent':
         counter = 1
@@ -457,4 +474,4 @@ def enable_print():
 if __name__ == '__main__':
     main()
 
-# look through https://spotipy.readthedocs.io/en/2.12.0/, playlist methods, try catch at end
+# look through https://spotipy.readthedocs.io/en/2.12.0/, playlist methods, try catch at end, recommendations
