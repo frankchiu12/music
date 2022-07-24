@@ -86,14 +86,17 @@ def get_information(id, type):
         if type == 'track':
             print(colored(' ' + sp.track(id)['name'] + ' ', 'grey', on_color = 'on_white') + '\n')
         elif type == 'album':
-            pass
+            print(colored(' ' + sp.album(id)['name'] + ' ', 'grey', on_color = 'on_white') + '\n')
         get_information(id, type)
 
     elif x == 'artist name':
         artist_list = []
-        for artist in sp.track(id)['artists']:
-            artist_list.append(artist['name'])
-        print(colored(' ' + str(artist_list) + ' ', 'grey', on_color = 'on_white') + '\n')
+        if type == 'track':
+            for artist in sp.track(id)['artists']:
+                artist_list.append(artist['name'])
+            print(colored(' ' + str(artist_list) + ' ', 'grey', on_color = 'on_white') + '\n')
+        elif type == 'album':
+            pass
         get_information(id, type)
 
     elif x == 'popularity':
@@ -361,14 +364,14 @@ def clear_terminal():
     term_size = os.get_terminal_size()
     print('=' * term_size.columns + '\n')
 
-def populate_information_list(song, id_to_song_information):
-    if song['id'] not in id_to_song_information:
-        id_to_song_information[song['id']] = []
-    id_to_song_information[song['id']].append(song['name'])
+def populate_information_list(item, id_to_information):
+    if item['id'] not in id_to_information:
+        id_to_information[item['id']] = []
+    id_to_information[item['id']].append(item['name'])
     artist_list = []
-    for artist in song['artists']:
+    for artist in item['artists']:
         artist_list.append(artist['name'])
-    id_to_song_information[song['id']].append(artist_list)
+    id_to_information[item['id']].append(artist_list)
 
 def search_helper(x, external_search):
     if '!a' in x:
@@ -506,4 +509,4 @@ def enable_print():
 if __name__ == '__main__':
     main()
 
-# look through https://spotipy.readthedocs.io/en/2.12.0/, try-catch, info clear
+# look through https://spotipy.readthedocs.io/en/2.12.0/, try-catch, info clear, type (album)
