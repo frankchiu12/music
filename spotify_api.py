@@ -1,3 +1,4 @@
+from email.policy import HTTP
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
@@ -81,8 +82,11 @@ def get_information(id, type):
     x = input('command> ')
     print('')
 
-    if x == 'song name':
-        print(colored(' ' + sp.track(id)['name'] + ' ', 'grey', on_color = 'on_white') + '\n')
+    if x == 'name':
+        if type == 'track':
+            print(colored(' ' + sp.track(id)['name'] + ' ', 'grey', on_color = 'on_white') + '\n')
+        elif type == 'album':
+            pass
         get_information(id, type)
 
     elif x == 'artist name':
