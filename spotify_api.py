@@ -5,7 +5,6 @@ import speech_recognition as sr
 import sys, os
 import webbrowser
 from termcolor import colored
-import math
 
 username = 'chiusiun'
 scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played user-top-read'
@@ -169,7 +168,7 @@ def get_song_information(id):
             song_name = song_name.partition(' (feat.')[0]
         print('Searching ...' + '\n')
         block_print()
-        song_name = genius.search_song(song_name, sp.track(id)['artists'][0])
+        song_name = genius.search_song(song_name, sp.track(id)['artists'][0]['name'])
         enable_print()
         if song_name is None:
             print_and_clear(id, 'No lyrics found.')
@@ -283,13 +282,13 @@ def get_song_information(id):
             print_and_clear(id, 'No active device.')
 
     elif x == 'user info':
-        # TODO
         display_name = sp.current_user()['display_name']
         followers = str(sp.current_user()['followers']['total'])
         print(colored('Display Name: ', 'red') + display_name)
         print(colored('Followers: ', 'yellow') + followers)
-        print(colored('User Top Tracks: ', 'green'))
+        print(colored('User Link: ', 'green') + sp.current_user()['external_urls']['spotify'])
 
+        print(colored('User Top Tracks: ', 'blue'))
         counter_to_song_name_and_main_artist = {}
         counter = 1
         for track in sp.current_user_top_tracks()['items']:
@@ -303,8 +302,12 @@ def get_song_information(id):
             print(str(counter) + '. ' + colored(song_name, 'cyan') + colored(' by ', 'grey') + str(artist_list))
             counter += 1
 
-        print(sp.current_user_top_artists())
-        print(sp.current_user()) # link
+        print(colored('User Top Artists', 'magenta'))
+        counter = 1
+        for artist in sp.current_user_top_artists()['items']:
+            print(str(counter) + '. ' + colored(artist['name'], 'cyan'))
+            counter += 1
+
         print('')
         internal_search(id, counter_to_song_name_and_main_artist)
 
@@ -379,7 +382,7 @@ def get_song_information_helper(id, information):
     get_song_information(id)
 
 def print_and_clear(id, message):
-    print('\033c', end = None)
+    # print('\033c', end = None)
     print(message + '\n')
     get_song_information(id)
 
@@ -474,4 +477,4 @@ def enable_print():
 if __name__ == '__main__':
     main()
 
-# look through https://spotipy.readthedocs.io/en/2.12.0/, playlist methods, try catch at end, recommendations
+# look through https://spotipy.readthedocs.io/en/2.12.0/, try-catch
