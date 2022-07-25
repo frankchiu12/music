@@ -620,8 +620,20 @@ def return_playlist_information(id):
         playlist_id = id
 
     playlist_name = sp.playlist(playlist_id)['name']
-    print(sp.playlist(playlist_id))
-    pass
+    playlist_description = sp.playlist(playlist_id)['description']
+    playlist_link = sp.playlist(playlist_id)['external_urls']['spotify']
+    playlist_followers = sp.playlist(playlist_id)['followers']['total']
+    playlist_URL = sp.playlist(playlist_id)['images'][0]['url']
+    playlist_owner = sp.playlist(playlist_id)['owner']['display_name']
+    print(colored('Playlist Name: ', 'red') + playlist_name)
+    print(colored('Playlist Description: ', 'yellow') + playlist_description)
+    print(colored('Playlist Owner: ', 'green') + playlist_owner)
+    print(colored('Playlist Followers: ', 'blue') + str(playlist_followers))
+    print(colored('Playlist Link: ', 'magenta') + playlist_link)
+
+    print(sp.playlist_tracks(playlist_id))
+    for song in sp.playlist_tracks(playlist_id):
+        pass
 
 if __name__ == '__main__':
     main()
