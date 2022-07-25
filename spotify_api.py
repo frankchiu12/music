@@ -1,3 +1,4 @@
+from distutils import sysconfig
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
@@ -632,8 +633,8 @@ def return_playlist_information(id):
     print(colored('Playlist Link: ', 'magenta') + playlist_link)
 
     print(sp.playlist_tracks(playlist_id))
-    for song in sp.playlist_tracks(playlist_id):
-        pass
+    for song in sp.playlist_tracks(playlist_id)['items']:
+        print(song)
 
 if __name__ == '__main__':
     main()
