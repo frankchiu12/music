@@ -621,6 +621,7 @@ def return_playlist_information(id):
 
     playlist_name = sp.playlist(playlist_id)['name']
     print(sp.playlist(playlist_id))
+    pass
 
 if __name__ == '__main__':
     main()
