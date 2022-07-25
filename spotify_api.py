@@ -1,4 +1,3 @@
-from matplotlib import artist
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
@@ -68,9 +67,13 @@ def choose_item(counter_to_list, external_search, type):
             print('Selected ' + colored(type, 'magenta') + ' ' + description + '\n')
             if type == 'track':
                 get_information(id)
+            # !back can't work if no current_song_id
             elif type == 'artist':
                 current_song_id = sp.current_user_playing_track()['item']['id']
                 return_artist_information([current_song_id, id], [sp.artist(id)['name']])
+            elif type == 'playlist':
+                current_song_id = sp.current_user_playing_track()['item']['id']
+                return_playlist_information([current_song_id, id])
             elif type == 'album':
                 current_song_id = sp.current_user_playing_track()['item']['id']
                 return_album_information([current_song_id, id])
@@ -311,7 +314,7 @@ def populate_information_list(item, id_to_information, type):
     if item['id'] not in id_to_information:
         id_to_information[item['id']] = []
     id_to_information[item['id']].append(item['name'])
-    if type != 'artist':
+    if type != 'artist' and type != 'playlist':
         artist_list = []
         for artist in item['artists']:
             artist_list.append(artist['name'])
@@ -326,7 +329,6 @@ def external_search_helper(x, external_search):
         x = x.partition('/playlist ')[2]
         search = (sp.search(q = x, type = 'playlist', limit = 10))['playlists']
         type = 'playlist'
-        print(search)
     elif '/album ' in x:
         x = x.partition('/album ')[2]
         search = (sp.search(q = x, type = 'album', limit = 10))['albums']
@@ -345,7 +347,7 @@ def external_search_helper(x, external_search):
     for id, information in id_to_information.items():
         item_name = information[0]
         id = str(id)
-        if type != 'artist':
+        if type != 'artist' and type != 'playlist':
             artist_list = str(information[1])
             colored_description = colored(item_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + colored(id, 'green')
             description = colored(item_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + id
@@ -610,6 +612,15 @@ def volume(id):
     print('Setting the volume to: ' + colored(' ' + str(x) + ' ', on_color = 'on_white')  + '\n')
     sp.volume(x)
     get_information(id)
+
+def return_playlist_information(id):
+    if isinstance(id, list):
+        playlist_id = id[1]
+    else:
+        playlist_id = id
+
+    playlist_name = sp.playlist(playlist_id)['name']
+    print(sp.playlist(playlist_id))
 
 if __name__ == '__main__':
     main()
