@@ -1,4 +1,3 @@
-from pyparsing import identbodychars
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
@@ -94,9 +93,9 @@ def get_information(id):
     x = input('command> ')
     print('')
 
-    if x == 'name':
-        print(colored(' ' + sp.track(id)['name'] + ' ', 'grey', on_color = 'on_white') + '\n')
-        get_information(id)
+    if x == 'album':
+        album_id = sp.track(id)['album']['id']
+        return_album_information(album_id)
 
     elif x == 'artist':
         artist_list = []
@@ -105,68 +104,6 @@ def get_information(id):
         artist_id = sp.track(id)['artists'][0]['id']
         return_artist_information(artist_id, artist_list)
 
-    elif x == 'popularity':
-        popularity = str(sp.track(id)['popularity'])
-        print(colored(' ' + popularity + ' ', 'grey', on_color = 'on_white') + '\n')
-        get_information(id)
-
-    elif x == 'album':
-        album_id = sp.track(id)['album']['id']
-        return_album_information(album_id)
-
-    elif x == 'release date':
-        release_date = sp.track(id)['album']['release_date']
-        print(colored(' ' + release_date + ' ', 'grey', on_color = 'on_white') + '\n')
-        get_information(id)
-
-    elif x == 'duration':
-        duration = sp.track(id)['duration_ms']
-        duration = parse_time(duration)
-        print(colored(' ' + duration + ' ', 'grey', on_color = 'on_white') + '\n')
-        get_information(id)
-
-    elif x == 'explicit':
-        explicit = sp.track(id)['explicit']
-        if explicit:
-            print(colored(str(explicit), 'red') + '\n')
-        else:
-            print(colored(str(explicit), 'green') + '\n')
-        get_information(id)
-
-    elif x == 'lyrics':
-        song_name = sp.track(id)['name']
-        if ' - From' in song_name:
-            song_name = song_name.partition(' - From')[0]
-        if ' (feat.' in song_name:
-            song_name = song_name.partition(' (feat.')[0]
-        print('Searching ...' + '\n')
-        sys.stdout = open(os.devnull, 'w')
-        song_name = genius.search_song(song_name, sp.track(id)['artists'][0]['name'])
-        sys.stdout = sys.__stdout__
-        if song_name is None:
-            print_and_clear(id, 'No lyrics found.')
-        else:
-            print_and_clear(id, song_name.lyrics)
-
-    elif x == 'open':
-        song_URL = sp.track(id)['external_urls']['spotify']
-        webbrowser.open(song_URL)
-        print_and_clear(id, 'Opening song ...')
-
-    elif x == 'image':
-        image_URL = sp.track(id)['album']['images'][0]['url']
-        webbrowser.open(image_URL)
-        print_and_clear(id, 'Opening image ...')
-
-    elif x == 'play':
-        song_URI_list = [sp.track(id)['uri']]
-        song_name = sp.track(id)['name']
-        artist_list = []
-        for artist in sp.track(id)['artists']:
-            artist_list.append(artist['name'])
-        sp.start_playback(device_id = 'bddcb19206692c58a23c8c88a13144e1d7e4541e', uris = song_URI_list)
-        print_and_clear(id, 'Playing ' + colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ' ...')
-
     elif x == 'continue':
         try:
             if not sp.current_playback()['is_playing']:
@@ -174,44 +111,6 @@ def get_information(id):
                 print_and_clear(id, 'Continuing ...')
             else:
                 print_and_clear(id, 'Already playing.')
-        except:
-            print_and_clear(id, 'No active device.')
-
-    elif x == 'pause':
-        try:
-            if sp.current_playback()['is_playing']:
-                sp.pause_playback()
-                print_and_clear(id, 'Paused.')
-            else:
-                print_and_clear(id, 'Already paused.')
-        except:
-            print_and_clear(id, 'No active device.')
-
-    elif x =='volume':
-        volume(id)
-
-    elif x == 'loop':
-        sp.repeat('track')
-        print_and_clear(id, 'Repeating ...')
-
-    elif x == 'timestamp':
-        timestamp_int = sp.current_user_playing_track()['progress_ms']
-        duration_int = sp.track(id)['duration_ms']
-        timestamp_string = parse_time(timestamp_int)
-        duration_string = parse_time(duration_int)
-        print(colored(' ' + timestamp_string + '/' + duration_string + ' ', 'grey', on_color = 'on_white') + '\n')
-        print_progress_bar(timestamp_int, duration_int, prefix = 'Progress:', suffix = 'Complete', length = 50)
-        print('\n')
-        get_information(id)
-
-    elif x == 'toggle':
-        toggle(id)
-
-    elif x == 'queue':
-        try:
-            song_URI = sp.track(id)['uri']
-            sp.add_to_queue(song_URI)
-            print_and_clear(id, 'Adding to queue ...')
         except:
             print_and_clear(id, 'No active device.')
 
@@ -228,6 +127,48 @@ def get_information(id):
             print('No song is currently playing.' + '\n')
             get_information(id)
 
+    elif x == 'duration':
+        duration = sp.track(id)['duration_ms']
+        duration = parse_time(duration)
+        print(colored(' ' + duration + ' ', 'grey', on_color = 'on_white') + '\n')
+        get_information(id)
+
+    elif x == 'explicit':
+        explicit = sp.track(id)['explicit']
+        if explicit:
+            print(colored(str(explicit), 'red') + '\n')
+        else:
+            print(colored(str(explicit), 'green') + '\n')
+        get_information(id)
+
+    elif x == 'image':
+        image_URL = sp.track(id)['album']['images'][0]['url']
+        webbrowser.open(image_URL)
+        print_and_clear(id, 'Opening image ...')
+
+    elif x == 'loop':
+        sp.repeat('track')
+        print_and_clear(id, 'Repeating ...')
+
+    elif x == 'lyrics':
+        song_name = sp.track(id)['name']
+        if ' - From' in song_name:
+            song_name = song_name.partition(' - From')[0]
+        if ' (feat.' in song_name:
+            song_name = song_name.partition(' (feat.')[0]
+        print('Searching ...' + '\n')
+        sys.stdout = open(os.devnull, 'w')
+        song_name = genius.search_song(song_name, sp.track(id)['artists'][0]['name'])
+        sys.stdout = sys.__stdout__
+        if song_name is None:
+            print_and_clear(id, 'No lyrics found.')
+        else:
+            print_and_clear(id, song_name.lyrics)
+
+    elif x == 'name':
+        print(colored(' ' + sp.track(id)['name'] + ' ', 'grey', on_color = 'on_white') + '\n')
+        get_information(id)
+
     elif x == 'next':
         try:
             sp.next_track()
@@ -235,6 +176,35 @@ def get_information(id):
             print_and_clear(next_song_id, 'Skipping to next ...')
         except:
             print_and_clear(id, 'No active device.')
+
+    elif x == 'open':
+        song_URL = sp.track(id)['external_urls']['spotify']
+        webbrowser.open(song_URL)
+        print_and_clear(id, 'Opening song ...')
+
+    elif x == 'pause':
+        try:
+            if sp.current_playback()['is_playing']:
+                sp.pause_playback()
+                print_and_clear(id, 'Paused.')
+            else:
+                print_and_clear(id, 'Already paused.')
+        except:
+            print_and_clear(id, 'No active device.')
+
+    elif x == 'play':
+        song_URI_list = [sp.track(id)['uri']]
+        song_name = sp.track(id)['name']
+        artist_list = []
+        for artist in sp.track(id)['artists']:
+            artist_list.append(artist['name'])
+        sp.start_playback(device_id = 'bddcb19206692c58a23c8c88a13144e1d7e4541e', uris = song_URI_list)
+        print_and_clear(id, 'Playing ' + colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ' ...')
+
+    elif x == 'popularity':
+        popularity = str(sp.track(id)['popularity'])
+        print(colored(' ' + popularity + ' ', 'grey', on_color = 'on_white') + '\n')
+        get_information(id)
 
     elif x == 'previous':
         try:
@@ -244,20 +214,17 @@ def get_information(id):
         except:
             print_and_clear(id, 'No active device.')
 
-    elif x == 'save':
-        if type != 'track':
-            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
-            get_information(id)
-        else:
-            saved = sp.current_user_saved_tracks_contains([id])[0]
-            if saved:
-                print_and_clear(id, 'Already saved.')
-            else:
-                sp.current_user_saved_tracks_add([id])
-                print_and_clear(id, 'Saving ...')
+    elif x == 'queue':
+        try:
+            song_URI = sp.track(id)['uri']
+            sp.add_to_queue(song_URI)
+            print_and_clear(id, 'Adding to queue ...')
+        except:
+            print_and_clear(id, 'No active device.')
 
-    elif x == 'user':
-        get_user_information()
+    elif x == 'quit':
+        print('\033c', end = None)
+        return
 
     elif x == 'recent':
         counter = 1
@@ -278,14 +245,42 @@ def get_information(id):
     elif x == 'redo':
         main()
 
-    elif x == 'quit':
-        print('\033c', end = None)
-        return
+    elif x == 'release date':
+        release_date = sp.track(id)['album']['release_date']
+        print(colored(' ' + release_date + ' ', 'grey', on_color = 'on_white') + '\n')
+        get_information(id)
 
-    # elif x == 'test':
-    #     print(sp.new_releases())
-    #     print(sp.featured_playlists())
-    #     get_information(id)
+    elif x == 'save':
+        if type != 'track':
+            print('That command is reserved for items of type ' + colored('track', 'magenta') + '.' + '\n')
+            get_information(id)
+        else:
+            saved = sp.current_user_saved_tracks_contains([id])[0]
+            if saved:
+                print_and_clear(id, 'Already saved.')
+            else:
+                sp.current_user_saved_tracks_add([id])
+                print_and_clear(id, 'Saving ...')
+
+    elif x == 'timestamp':
+        timestamp_int = sp.current_user_playing_track()['progress_ms']
+        duration_int = sp.track(id)['duration_ms']
+        timestamp_string = parse_time(timestamp_int)
+        duration_string = parse_time(duration_int)
+        print(colored(' ' + timestamp_string + '/' + duration_string + ' ', 'grey', on_color = 'on_white') + '\n')
+        print_progress_bar(timestamp_int, duration_int, prefix = 'Progress:', suffix = 'Complete', length = 50)
+        print('\n')
+        get_information(id)
+
+    elif x == 'toggle':
+        toggle(id)
+
+    elif x == 'user':
+        get_user_information()
+
+
+    elif x =='volume':
+        volume(id)
 
     else:
         print('Invalid command!' + '\n')
@@ -301,20 +296,20 @@ def populate_information_list(item, id_to_information):
     id_to_information[item['id']].append(artist_list)
 
 def external_search_helper(x, external_search):
-    if '/album ' in x:
-        x = x.partition('/album ')[2]
-        search = (sp.search(q = x, type = 'album', limit = 10))['albums']
-        type = 'album'
+    if '/artist' in x:
+        x = x.partition('/artist ')[2]
+        search = (sp.search(q = x, type = 'artist', limit = 10))
+        type = 'artist'
+        print(search)
     elif '/playlist ' in x:
         x = x.partition('/playlist ')[2]
         search = (sp.search(q = x, type = 'playlist', limit = 10))['playlists']
         type = 'playlist'
         print(search)
-    elif '/artist' in x:
-        x = x.partition('/artist ')[2]
-        search = (sp.search(q = x, type = 'artist', limit = 10))
-        type = 'artist'
-        print(search)
+    elif '/album ' in x:
+        x = x.partition('/album ')[2]
+        search = (sp.search(q = x, type = 'album', limit = 10))['albums']
+        type = 'album'
     else:
         search = (sp.search(q = x, type = 'track', limit = 10))['tracks']
         type = 'track'
@@ -322,8 +317,8 @@ def external_search_helper(x, external_search):
     id_to_information = {}
     for item in search['items']:
         populate_information_list(item, id_to_information)
-    print('\033c', end = None)
 
+    print('\033c', end = None)
     counter = 1
     counter_to_list = {}
     for id, information in id_to_information.items():
@@ -337,14 +332,9 @@ def external_search_helper(x, external_search):
         if counter not in counter_to_list:
             counter_to_list[counter] = description
         counter += 1
-
     print('')
-    choose_item(counter_to_list, external_search, type)
 
-def print_and_clear(id, message):
-    print('\033c', end = None)
-    print(message + '\n')
-    get_information(id)
+    choose_item(counter_to_list, external_search, type)
 
 def internal_search(id, counter_to_song_name_and_main_artist, type):
     x = input('internal_search> ')
@@ -369,6 +359,7 @@ def internal_search(id, counter_to_song_name_and_main_artist, type):
             webbrowser.open(album_URL)
             print_and_clear(id, 'Opening album ...')
     elif x == 'image':
+        # TODO
         pass
     elif x == '!back':
         print('\033c', end = None)
@@ -376,72 +367,48 @@ def internal_search(id, counter_to_song_name_and_main_artist, type):
     else:
         external_search_helper(x, True)
 
-def volume(id):
-    x = input('    volume> ')
-
-    if x.isdigit() and 0 <= int(x) <= 100:
-        x = int(x)
-    elif x.isdigit():
-        print('\n' + 'The volume inputted is out of range!' +'\n')
-        volume(id)
-    elif x == '!keep':
-        print('')
-        get_information(id)
-    else:
-        print('\n' + 'Invalid command!' +'\n')
-        get_information(id)
-
+def print_and_clear(id, message):
     print('\033c', end = None)
-    print('Setting the volume to: ' + colored(' ' + str(x) + ' ', on_color = 'on_white')  + '\n')
-    sp.volume(x)
+    print(message + '\n')
     get_information(id)
 
-def parse_time(ms):
-    s, ms = divmod(ms, 1000)
-    m, s = divmod(s, 60)
-    if s == 0:
-        s = '00'
-    time = str(m) + ':' + str(s)
-    return time
+def return_album_information(id):
+    album_name = sp.album(id)['name']
+    album_type = sp.album(id)['album_type']
+    artist_list = []
+    for artist in sp.album(id)['artists']:
+        artist_list.append(artist['name'])
+    release_date = sp.album(id)['release_date']
+    total_tracks = str(sp.album(id)['total_tracks'])
+    genre_list = str(sp.album(id)['genres'])
+    popularity = str(sp.album(id)['popularity'])
+    label = str(sp.album(id)['label'])
+    link = sp.album(id)['external_urls']['spotify']
+    print(colored('Album Name: ', 'red') + album_name)
+    print(colored('Album Type: ', 'yellow') + album_type)
+    print(colored('Artist List: ', 'green') + str(artist_list))
+    print(colored('Release Date: ', 'blue') + release_date)
+    print(colored('Total Tracks: ', 'magenta') + total_tracks)
+    print(colored('Genres: ', 'red') + genre_list)
+    print(colored('Popularity: ', 'yellow') + popularity)
+    print(colored('Label: ', 'green') + label)
+    print(colored('Link: ', 'blue') + link)
 
-def print_progress_bar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', print_end = '\r'):
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filled_length = int(length * iteration // total)
-    bar = fill * filled_length + '-' * (length - filled_length)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = print_end)
-
-def toggle(id):
-    x = input('    timestamp> ')
-
-    if x != '!keep':
-        try:
-            x = x.partition(':')
-            minute = int(x[0])
-            second = int(x[2])
-            x = (minute * 60 + second) * 1000
-        except:
-            print('\n' + 'Invalid command!' +'\n')
-            get_information(id)
-    else:
-        print('')
-        get_information(id)
-
-    if 0 <= x <= sp.track(id)['duration_ms']:
-        pass
-    elif isinstance(x, int):
-        print('\n' + 'The timestamp inputted is out of range!' +'\n')
-        toggle(id)
-    else:
-        print('\n' + 'Invalid command!' +'\n')
-        get_information(id)
-
-    sp.seek_track(x)
-    print('\033c', end = None)
-    print('Setting the timestamp to: ' + colored(' ' + parse_time(x) + ' ', on_color = 'on_white')  + '\n')
-    duration_int = sp.track(id)['duration_ms']
-    print_progress_bar(x, duration_int, prefix = 'Progress:', suffix = 'Complete', length = 50)
-    print('\n')
-    get_information(id)
+    print(colored('Tracks: ', 'magenta'))
+    counter_to_song_name_and_main_artist = {}
+    counter = 1
+    for track in sp.album_tracks(id)['items']:
+        song_name = track['name']
+        main_artist = track['artists'][0]['name']
+        artist_list = []
+        if counter not in counter_to_song_name_and_main_artist:
+            counter_to_song_name_and_main_artist[counter] = song_name + ' ' + main_artist
+        for artist in track['artists']:
+            artist_list.append(artist['name'])
+        print(str(counter) + '. ' + colored(song_name, 'cyan') + colored(' by ', 'grey') + str(artist_list))
+        counter += 1
+    print('')
+    internal_search(id, counter_to_song_name_and_main_artist, 'album')
 
 def return_artist_information(id, artist_list):
     main_artist = sp.artist(id)['name']
@@ -493,45 +460,52 @@ def return_artist_information(id, artist_list):
     print('')
     internal_search(id, counter_to_song_name_and_main_artist, 'artist')
 
-def return_album_information(id):
-    album_name = sp.album(id)['name']
-    album_type = sp.album(id)['album_type']
-    artist_list = []
-    for artist in sp.album(id)['artists']:
-        artist_list.append(artist['name'])
-    release_date = sp.album(id)['release_date']
-    total_tracks = str(sp.album(id)['total_tracks'])
-    genre_list = str(sp.album(id)['genres'])
-    popularity = str(sp.album(id)['popularity'])
-    label = str(sp.album(id)['label'])
-    link = sp.album(id)['external_urls']['spotify']
+def parse_time(ms):
+    s, ms = divmod(ms, 1000)
+    m, s = divmod(s, 60)
+    if s == 0:
+        s = '00'
+    time = str(m) + ':' + str(s)
+    return time
 
-    print(colored('Album Name: ', 'red') + album_name)
-    print(colored('Album Type: ', 'yellow') + album_type)
-    print(colored('Artist List: ', 'green') + str(artist_list))
-    print(colored('Release Date: ', 'blue') + release_date)
-    print(colored('Total Tracks: ', 'magenta') + total_tracks)
-    print(colored('Genres: ', 'red') + genre_list)
-    print(colored('Popularity: ', 'yellow') + popularity)
-    print(colored('Label: ', 'green') + label)
-    print(colored('Link: ', 'blue') + link)
+def print_progress_bar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', print_end = '\r'):
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filled_length = int(length * iteration // total)
+    bar = fill * filled_length + '-' * (length - filled_length)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = print_end)
 
-    print(colored('Tracks: ', 'magenta'))
-    counter_to_song_name_and_main_artist = {}
-    counter = 1
-    for track in sp.album_tracks(id)['items']:
-        song_name = track['name']
-        main_artist = track['artists'][0]['name']
-        artist_list = []
-        if counter not in counter_to_song_name_and_main_artist:
-            counter_to_song_name_and_main_artist[counter] = song_name + ' ' + main_artist
-        for artist in track['artists']:
-            artist_list.append(artist['name'])
-        print(str(counter) + '. ' + colored(song_name, 'cyan') + colored(' by ', 'grey') + str(artist_list))
-        counter += 1
+def toggle(id):
+    x = input('    timestamp> ')
 
-    print('')
-    internal_search(id, counter_to_song_name_and_main_artist, 'album')
+    if x != '!keep':
+        try:
+            x = x.partition(':')
+            minute = int(x[0])
+            second = int(x[2])
+            x = (minute * 60 + second) * 1000
+        except:
+            print('\n' + 'Invalid command!' +'\n')
+            get_information(id)
+    else:
+        print('')
+        get_information(id)
+
+    if 0 <= x <= sp.track(id)['duration_ms']:
+        pass
+    elif isinstance(x, int):
+        print('\n' + 'The timestamp inputted is out of range!' +'\n')
+        toggle(id)
+    else:
+        print('\n' + 'Invalid command!' +'\n')
+        get_information(id)
+
+    sp.seek_track(x)
+    print('\033c', end = None)
+    print('Setting the timestamp to: ' + colored(' ' + parse_time(x) + ' ', on_color = 'on_white')  + '\n')
+    duration_int = sp.track(id)['duration_ms']
+    print_progress_bar(x, duration_int, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    print('\n')
+    get_information(id)
 
 def get_user_information():
     display_name = sp.current_user()['display_name']
@@ -563,7 +537,27 @@ def get_user_information():
     print('')
     internal_search(id, counter_to_song_name_and_main_artist, 'track')
 
+def volume(id):
+    x = input('    volume> ')
+
+    if x.isdigit() and 0 <= int(x) <= 100:
+        x = int(x)
+    elif x.isdigit():
+        print('\n' + 'The volume inputted is out of range!' +'\n')
+        volume(id)
+    elif x == '!keep':
+        print('')
+        get_information(id)
+    else:
+        print('\n' + 'Invalid command!' +'\n')
+        get_information(id)
+
+    print('\033c', end = None)
+    print('Setting the volume to: ' + colored(' ' + str(x) + ' ', on_color = 'on_white')  + '\n')
+    sp.volume(x)
+    get_information(id)
+
 if __name__ == '__main__':
     main()
 
-# doc, try-catch, exceed size of list
+# doc, try-catch
