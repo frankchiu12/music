@@ -1,3 +1,4 @@
+from matplotlib import artist
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
@@ -42,7 +43,7 @@ def initial_search():
         if sp.current_user_playing_track() is not None:
             id_to_song_information = {}
             song = sp.current_user_playing_track()['item']
-            populate_information_list(song, id_to_song_information)
+            populate_information_list(song, id_to_song_information, 'track')
 
             print('\033c', end = None)
             term_size = os.get_terminal_size()
@@ -67,8 +68,12 @@ def choose_item(counter_to_list, external_search, type):
             print('Selected ' + colored(type, 'magenta') + ' ' + description + '\n')
             if type == 'track':
                 get_information(id)
+            elif type == 'artist':
+                current_song_id = sp.current_user_playing_track()['item']['id']
+                return_artist_information([current_song_id, id], [sp.artist(id)['name']])
             elif type == 'album':
-                return_album_information(id)
+                current_song_id = sp.current_user_playing_track()['item']['id']
+                return_album_information([current_song_id, id])
         elif x.isdigit():
             print('\n' + 'The number inputted is outside of the result list size of 10.' +'\n')
             choose_item(counter_to_list, True, type)
@@ -94,14 +99,14 @@ def get_information(id):
     print('')
 
     if x == 'album':
-        album_id = sp.track(id)['album']['id']
+        album_id = [id, sp.track(id)['album']['id']]
         return_album_information(album_id)
 
     elif x == 'artist':
         artist_list = []
         for artist in sp.track(id)['artists']:
             artist_list.append(artist['name'])
-        artist_id = sp.track(id)['artists'][0]['id']
+        artist_id = [id, sp.track(id)['artists'][0]['id']]
         return_artist_information(artist_id, artist_list)
 
     elif x == 'continue':
@@ -168,6 +173,23 @@ def get_information(id):
     elif x == 'name':
         print(colored(' ' + sp.track(id)['name'] + ' ', 'grey', on_color = 'on_white') + '\n')
         get_information(id)
+    
+    elif x == 'new releases':
+        counter_to_song_name_and_main_artist = {}
+        counter = 1
+        for track in sp.new_releases()['albums']['items']:
+            song_name = track['name']
+            main_artist = track['artists'][0]['name']
+            artist_list = []
+            if counter not in counter_to_song_name_and_main_artist:
+                counter_to_song_name_and_main_artist[counter] = song_name + ' ' + main_artist
+            for artist in track['artists']:
+                artist_list.append(artist['name'])
+            print(str(counter) + '. ' + colored(song_name, 'red') + ' by ' + colored(str(artist_list), 'blue'))
+            counter += 1
+        print('')
+        internal_search(id, counter_to_song_name_and_main_artist, 'album')
+        print(sp.new_releases())
 
     elif x == 'next':
         try:
@@ -276,8 +298,7 @@ def get_information(id):
         toggle(id)
 
     elif x == 'user':
-        get_user_information()
-
+        get_user_information(id)
 
     elif x =='volume':
         volume(id)
@@ -286,21 +307,21 @@ def get_information(id):
         print('Invalid command!' + '\n')
         get_information(id)
 
-def populate_information_list(item, id_to_information):
+def populate_information_list(item, id_to_information, type):
     if item['id'] not in id_to_information:
         id_to_information[item['id']] = []
     id_to_information[item['id']].append(item['name'])
-    artist_list = []
-    for artist in item['artists']:
-        artist_list.append(artist['name'])
-    id_to_information[item['id']].append(artist_list)
+    if type != 'artist':
+        artist_list = []
+        for artist in item['artists']:
+            artist_list.append(artist['name'])
+        id_to_information[item['id']].append(artist_list)
 
 def external_search_helper(x, external_search):
-    if '/artist' in x:
+    if '/artist ' in x:
         x = x.partition('/artist ')[2]
-        search = (sp.search(q = x, type = 'artist', limit = 10))
+        search = (sp.search(q = x, type = 'artist', limit = 10))['artists']
         type = 'artist'
-        print(search)
     elif '/playlist ' in x:
         x = x.partition('/playlist ')[2]
         search = (sp.search(q = x, type = 'playlist', limit = 10))['playlists']
@@ -316,17 +337,21 @@ def external_search_helper(x, external_search):
 
     id_to_information = {}
     for item in search['items']:
-        populate_information_list(item, id_to_information)
+        populate_information_list(item, id_to_information, type)
 
     print('\033c', end = None)
     counter = 1
     counter_to_list = {}
     for id, information in id_to_information.items():
-        song_name = information[0]
-        artist_list = str(information[1])
+        item_name = information[0]
         id = str(id)
-        colored_description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + colored(id, 'green')
-        description = colored(song_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + id
+        if type != 'artist':
+            artist_list = str(information[1])
+            colored_description = colored(item_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + colored(id, 'green')
+            description = colored(item_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + id
+        else:
+            colored_description = colored(item_name, 'red') + ', id: ' + colored(id, 'blue')
+            description = colored(item_name, 'red') + ', id: ' + id
         if external_search:
             print(str(counter) + '. ' + colored_description + ', ' + colored('type: ' + type, 'magenta'))
         if counter not in counter_to_list:
@@ -339,6 +364,12 @@ def external_search_helper(x, external_search):
 def internal_search(id, counter_to_song_name_and_main_artist, type):
     x = input('internal_search> ')
     list_size = len(counter_to_song_name_and_main_artist)
+    if isinstance(id, list):
+        original_id = id[0]
+        new_id = id[1]
+    else:
+        original_id = id
+        new_id = id
 
     if x.isdigit() and 1 <= int(x) <= list_size:
         x = counter_to_song_name_and_main_artist[int(x)]
@@ -351,19 +382,32 @@ def internal_search(id, counter_to_song_name_and_main_artist, type):
             print('\n' + 'That command is reserved for items of type ' + colored('album/playlist/artist', 'magenta') + '.' + '\n')
             internal_search(id, counter_to_song_name_and_main_artist, type)
         elif type == 'artist':
-            artist_URL = sp.artist(id)['external_urls']['spotify']
+            artist_URL = sp.artist(new_id)['external_urls']['spotify']
             webbrowser.open(artist_URL)
-            print_and_clear(id, 'Opening artist page ...')
+            print('\n' + 'Opening artist page ...' + '\n')
+            internal_search(id, counter_to_song_name_and_main_artist, type)
         elif type == 'album':
-            album_URL = sp.album(id)['external_urls']['spotify']
+            album_URL = sp.album(new_id)['external_urls']['spotify']
             webbrowser.open(album_URL)
-            print_and_clear(id, 'Opening album ...')
-    elif x == 'image':
-        # TODO
-        pass
+            print('\n' + 'Opening album ...' + '\n')
+            internal_search(id, counter_to_song_name_and_main_artist, type)
+    elif x == '!image':
+        if type == 'track':
+            print('\n' + 'That command is reserved for items of type ' + colored('album/playlist/artist', 'magenta') + '.' + '\n')
+            internal_search(id, counter_to_song_name_and_main_artist, type)
+        elif type == 'artist':
+            artist_URL = sp.artist(new_id)['images'][0]['url']
+            webbrowser.open(artist_URL)
+            print('\n' + 'Opening artist image ...' + '\n')
+            internal_search(id, counter_to_song_name_and_main_artist, type)
+        elif type == 'album':
+            album_URL = sp.album(new_id)['images'][0]['url']
+            webbrowser.open(album_URL)
+            print('\n' + 'Opening artist image ...' + '\n')
+            internal_search(id, counter_to_song_name_and_main_artist, type)
     elif x == '!back':
         print('\033c', end = None)
-        get_information(id)
+        get_information(original_id)
     else:
         external_search_helper(x, True)
 
@@ -373,17 +417,22 @@ def print_and_clear(id, message):
     get_information(id)
 
 def return_album_information(id):
-    album_name = sp.album(id)['name']
-    album_type = sp.album(id)['album_type']
+    if isinstance(id, list):
+        album_id = id[1]
+    else:
+        album_id = id
+
+    album_name = sp.album(album_id)['name']
+    album_type = sp.album(album_id)['album_type']
     artist_list = []
-    for artist in sp.album(id)['artists']:
+    for artist in sp.album(album_id)['artists']:
         artist_list.append(artist['name'])
-    release_date = sp.album(id)['release_date']
-    total_tracks = str(sp.album(id)['total_tracks'])
-    genre_list = str(sp.album(id)['genres'])
-    popularity = str(sp.album(id)['popularity'])
-    label = str(sp.album(id)['label'])
-    link = sp.album(id)['external_urls']['spotify']
+    release_date = sp.album(album_id)['release_date']
+    total_tracks = str(sp.album(album_id)['total_tracks'])
+    genre_list = str(sp.album(album_id)['genres'])
+    popularity = str(sp.album(album_id)['popularity'])
+    label = str(sp.album(album_id)['label'])
+    link = sp.album(album_id)['external_urls']['spotify']
     print(colored('Album Name: ', 'red') + album_name)
     print(colored('Album Type: ', 'yellow') + album_type)
     print(colored('Artist List: ', 'green') + str(artist_list))
@@ -397,7 +446,7 @@ def return_album_information(id):
     print(colored('Tracks: ', 'magenta'))
     counter_to_song_name_and_main_artist = {}
     counter = 1
-    for track in sp.album_tracks(id)['items']:
+    for track in sp.album_tracks(album_id)['items']:
         song_name = track['name']
         main_artist = track['artists'][0]['name']
         artist_list = []
@@ -411,10 +460,15 @@ def return_album_information(id):
     internal_search(id, counter_to_song_name_and_main_artist, 'album')
 
 def return_artist_information(id, artist_list):
-    main_artist = sp.artist(id)['name']
+    if isinstance(id, list):
+        artist_id = id[1]
+    else:
+        artist_id = id
+
+    main_artist = sp.artist(artist_id)['name']
     if main_artist in artist_list:
         artist_list.remove(main_artist)
-    artist_URL = sp.artist(id)['external_urls']['spotify']
+    artist_URL = sp.artist(artist_id)['external_urls']['spotify']
     genre_list = str(sp.artist(artist_URL)['genres'])
     popularity = str(sp.artist(artist_URL)['popularity'])
     total_followers = str(sp.artist(artist_URL)['followers']['total'])
@@ -507,7 +561,7 @@ def toggle(id):
     print('\n')
     get_information(id)
 
-def get_user_information():
+def get_user_information(id):
     display_name = sp.current_user()['display_name']
     followers = str(sp.current_user()['followers']['total'])
     print(colored('Display Name: ', 'red') + display_name)
@@ -559,5 +613,3 @@ def volume(id):
 
 if __name__ == '__main__':
     main()
-
-# doc, try-catch
