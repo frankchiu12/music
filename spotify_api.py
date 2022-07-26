@@ -282,8 +282,21 @@ def command(id):
             artist_id_list.append(artist['id'])
         random.shuffle(track_id_list)
         random.shuffle(artist_id_list)
-        print(sp.recommendations(seed_tracks = track_id_list[:3], seed_artists = artist_id_list[:2], limit = 25))
-        command(id)
+        print(colored('Recommended Tracks: ', 'magenta'))
+        counter_to_song_name_and_main_artist = {}
+        counter = 1
+        for track in sp.recommendations(seed_tracks = track_id_list[:3], seed_artists = artist_id_list[:2], limit = 50)['tracks']:
+            track_name = track['name']
+            main_artist = track['artists'][0]['name']
+            artist_list = []
+            if counter not in counter_to_song_name_and_main_artist:
+                counter_to_song_name_and_main_artist[counter] = track_name + ' ' + main_artist
+            for artist in track['artists']:
+                artist_list.append(artist['name'])
+            print(str(counter) + '. ' + colored(track_name, 'cyan') + colored(' by ', 'grey') + str(artist_list))
+            counter += 1
+        print('')
+        internal_search(id, counter_to_song_name_and_main_artist, 'track')
 
     elif x == 'redo':
         main()
