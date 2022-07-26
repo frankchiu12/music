@@ -5,6 +5,7 @@ import speech_recognition as sr
 import sys, os
 import webbrowser
 from termcolor import colored
+import random
 
 username = 'chiusiun'
 scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played user-top-read user-library-modify user-library-read'
@@ -270,6 +271,19 @@ def command(id):
             counter += 1
         print('')
         internal_search(id, counter_to_playlist_id, 'track')
+
+    elif x == 'recommendation':
+        track_id_list = []
+        artist_id_list = []
+        for track in sp.current_user_top_tracks()['items']:
+            track_id = track['id']
+            track_id_list.append(track_id)
+        for artist in sp.current_user_top_artists()['items']:
+            artist_id_list.append(artist['id'])
+        random.shuffle(track_id_list)
+        random.shuffle(artist_id_list)
+        print(sp.recommendations(seed_tracks = track_id_list[:3], seed_artists = artist_id_list[:2], limit = 25))
+        command(id)
 
     elif x == 'redo':
         main()
