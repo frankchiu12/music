@@ -632,12 +632,14 @@ def return_playlist_information(id):
     print(colored('Playlist Followers: ', 'blue') + str(playlist_followers))
     print(colored('Playlist Link: ', 'magenta') + playlist_link)
 
+    print(sp.playlist_tracks(playlist_id)['total'])
     for song in sp.playlist_tracks(playlist_id)['items']:
         print(song['track']['name'])
         artist_list = []
         for artist in song['track']['artists']:
             artist_list.append(artist['name'])
         print(artist_list)
+        print(song['track']['id'])
 
 if __name__ == '__main__':
     main()
