@@ -79,7 +79,7 @@ def choose(counter_to_information, external_search, type):
             print('\033c', end = None)
             return
         else:
-            print('\n' + 'Invalid command!' + '\n')
+            print('\n' + 'Invalid command.' + '\n')
             choose(counter_to_information, True, type)
     else:
         id = counter_to_information[1].partition('id: ')[2]
@@ -325,7 +325,7 @@ def command(id):
         volume(id)
 
     else:
-        print('Invalid command!' + '\n')
+        print('Invalid command.' + '\n')
         command(id)
 
 def populate_id_to_information_dictionary(item, id_to_information, type):
@@ -557,7 +557,7 @@ def get_artist_information(id, artist_list):
     for album in sp.artist_albums(artist_URL)['items']:
         album_name = album['name']
         album_total_tracks = str(album['total_tracks'])
-        print(str(counter) + '. ' + colored(album_name, 'cyan') + colored(' with ', 'grey') + album_total_tracks + ' song(s)')
+        print(str(counter) + '. ' + colored(album_name, 'cyan') + colored(' with ', 'grey') + album_total_tracks + ' track(s)')
         counter += 1
     print('')
     internal_search(id, counter_to_artist_information, 'artist')
@@ -585,7 +585,7 @@ def toggle(id):
             second = int(x[2])
             x = (minute * 60 + second) * 1000
         except:
-            print('\n' + 'Invalid command!' +'\n')
+            print('\n' + 'Invalid command.' +'\n')
             command(id)
     else:
         print('')
@@ -594,10 +594,10 @@ def toggle(id):
     if 0 <= x <= sp.track(id)['duration_ms']:
         pass
     elif isinstance(x, int):
-        print('\n' + 'The timestamp inputted is out of range!' +'\n')
+        print('\n' + 'The timestamp inputted is out of range.' +'\n')
         toggle(id)
     else:
-        print('\n' + 'Invalid command!' +'\n')
+        print('\n' + 'Invalid command.' +'\n')
         command(id)
 
     sp.seek_track(x)
@@ -644,13 +644,13 @@ def volume(id):
     if x.isdigit() and 0 <= int(x) <= 100:
         x = int(x)
     elif x.isdigit():
-        print('\n' + 'The volume inputted is out of range!' +'\n')
+        print('\n' + 'The volume inputted is out of range.' +'\n')
         volume(id)
     elif x == '!keep':
         print('')
         command(id)
     else:
-        print('\n' + 'Invalid command!' +'\n')
+        print('\n' + 'Invalid command.' +'\n')
         command(id)
 
     print('\033c', end = None)
