@@ -121,11 +121,11 @@ def command(id):
             print_and_clear(id, 'Already playing.')
 
     elif x == 'current':
-        track_name = sp.current_user_playing_track()['item']['name']
+        current_track_name = sp.current_user_playing_track()['item']['name']
         artist_list = []
         for artist in sp.current_user_playing_track()['item']['artists']:
             artist_list.append(artist['name'])
-        print(colored(track_name, 'red') + ' by ' + colored(str(artist_list), 'blue') + '\n')
+        print(colored(current_track_name, 'red') + ' by ' + colored(str(artist_list), 'blue') + '\n')
         command(id)
 
     elif x == 'duration':
@@ -187,7 +187,7 @@ def command(id):
         command(id)
     
     elif x == 'new':
-        counter_to_new_released_album_information = {}
+        counter_to_newly_released_album_information = {}
         counter = 1
         for track in sp.new_releases()['albums']['items']:
             track_id = track['id']
@@ -195,12 +195,12 @@ def command(id):
             artist_list = []
             for artist in track['artists']:
                 artist_list.append(artist['name'])
-            if counter not in counter_to_new_released_album_information:
-                counter_to_new_released_album_information[counter] = '#new, id: ' + track_id
+            if counter not in counter_to_newly_released_album_information:
+                counter_to_newly_released_album_information[counter] = '#new, id: ' + track_id
             print(str(counter) + '. ' + colored(track_name, 'red') + ' by ' + colored(str(artist_list), 'blue'))
             counter += 1
         print('')
-        internal_search(id, counter_to_new_released_album_information, 'album')
+        internal_search(id, counter_to_newly_released_album_information, 'album')
 
     elif x == 'next':
         next_track_id = sp.current_user_playing_track()['item']['id']
@@ -257,7 +257,7 @@ def command(id):
             for artist in track['track']['artists']:
                 artist_list.append(artist['name'])
             if counter not in counter_to_recent_track_information:
-                counter_to_recent_track_information[counter] = track_name + artist_list[0]
+                counter_to_recent_track_information[counter] = track_name + ' ' + artist_list[0]
             print(str(counter) + '. ' + colored(track_name, 'red') + ' by ' + colored(str(artist_list), 'blue') + ', id: ' + colored(track_ID, 'green'))
             counter += 1
         print('')
@@ -341,20 +341,20 @@ def populate_id_to_information_dictionary(item, id_to_information, type):
 
 def search_helper(x, external_search):
     if '#featured' in x:
-        counter_to_playlist_information = {}
+        counter_to_information = {}
         playlist_id = x.partition(', id: ')[2]
         playlist_name = sp.playlist(playlist_id)['name']
         playlist_owner = sp.playlist(playlist_id)['owner']['display_name']
-        counter_to_playlist_information[1] = '#featured: ' + colored(playlist_name, 'red') + ' by ' + colored(playlist_owner, 'blue') + ', id: ' + playlist_id
+        counter_to_information[1] = '#featured: ' + colored(playlist_name, 'red') + ' by ' + colored(playlist_owner, 'blue') + ', id: ' + playlist_id
         type = 'playlist'
     elif '#new' in x:
-        counter_to_album_information = {}
+        counter_to_information = {}
         album_id = x.partition(', id: ')[2]
         album_name = sp.album(album_id)['name']
         artist_list = []
         for artist in sp.album(album_id)['artists']:
             artist_list.append(artist['name'])
-        counter_to_album_information[1] = '#new: ' + colored(album_name, 'red') + ' by ' + colored(str(artist_list), 'blue') + ', id: ' + album_id
+        counter_to_information[1] = '#new: ' + colored(album_name, 'red') + ' by ' + colored(str(artist_list), 'blue') + ', id: ' + album_id
         type = 'album'
     else:
         if '/artist ' in x:
@@ -379,7 +379,7 @@ def search_helper(x, external_search):
 
         print('\033c', end = None)
         counter = 1
-        counter_to_album_information = {}
+        counter_to_information = {}
         for id, information in id_to_information.items():
             item_name = information[0]
             id = str(id)
@@ -392,12 +392,12 @@ def search_helper(x, external_search):
                 description = colored(item_name, 'red') + ', id: ' + id
             if external_search:
                 print(str(counter) + '. ' + colored_description + ', ' + colored('type: ' + type, 'magenta'))
-            if counter not in counter_to_album_information:
-                counter_to_album_information[counter] = description
+            if counter not in counter_to_information:
+                counter_to_information[counter] = description
             counter += 1
 
     print('')
-    choose(counter_to_album_information, external_search, type)
+    choose(counter_to_information, external_search, type)
 
 def internal_search(id, counter_to_information, type):
     x = input('internal_search> ')
@@ -667,11 +667,11 @@ def get_playlist_information(id):
     playlist_name = sp.playlist(playlist_id)['name']
     playlist_description = sp.playlist(playlist_id)['description']
     playlist_owner = sp.playlist(playlist_id)['owner']['display_name']
-    playlist_followers = sp.playlist(playlist_id)['followers']['total']
+    total_followers = sp.playlist(playlist_id)['followers']['total']
     print(colored('Playlist Name: ', 'red') + playlist_name)
     print(colored('Playlist Description: ', 'yellow') + playlist_description)
     print(colored('Playlist Owner: ', 'green') + playlist_owner)
-    print(colored('Playlist Followers: ', 'blue') + str(playlist_followers))
+    print(colored('Total Followers: ', 'blue') + str(total_followers))
 
     print(colored('Playlist Tracks: ', 'magenta'))
     counter_to_playlist_information = {}
