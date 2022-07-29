@@ -1,14 +1,28 @@
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 from youtubesearchpython import *
 import youtube_dl
-from dotenv import load_dotenv
+import spotipy
+import spotipy.util as util
+from lyricsgenius import Genius
 import os
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 SERVER = os.getenv('DISCORD_SERVER')
 bot = commands.Bot(command_prefix = '!')
+
+username = 'chiusiun'
+scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played user-top-read user-library-modify user-library-read'
+client_id = '3aa6dc3eea4b485497c73da406f11802'
+client_secret = 'c08afd7602b740589ccf5198eb2982a2'
+redirect_URI = 'http://google.com/'
+spotify_token = util.prompt_for_user_token(username, scope, client_id, client_secret, redirect_URI)
+sp = spotipy.Spotify(auth = spotify_token)
+
+genius_token = 'Q8q2Cs-4YkZT_83az4gYWpQrkSthadNOWMeuJhJOmHmIB3sBj3_HMX9SY2gR2HC5'
+genius = Genius(genius_token)
 
 @bot.event
 async def on_ready():
@@ -33,8 +47,7 @@ async def hi(ctx):
 
 @bot.command(name = 'disconnect', help = 'Make the bot disconnect from the current voice channel')
 async def disconnect(ctx):
-    guild = discord.utils.get(bot.guilds, name = SERVER)
-    voice = discord.utils.get(bot.voice_clients, guild = guild)
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
     if voice is not None:
         await voice.disconnect()
         await ctx.send('Disconnected.')
@@ -43,51 +56,32 @@ async def disconnect(ctx):
 
 @bot.command(name = 'pause', help = 'Pause the music')
 async def pause(ctx):
-    guild = discord.utils.get(bot.guilds, name = SERVER)
-    voice = discord.utils.get(bot.voice_clients, guild = guild)
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
     if voice is not None and voice.is_playing():
         voice.pause()
         await ctx.send('Paused.')
     else:
         await ctx.send('The music_bot is not currently playing.')
 
+song_file_path = 'song.mp3'
+
 @bot.command(name = 'play', help = 'Play given a search query')
 async def play(ctx, *search):
     voice_channel = discord.utils.get(ctx.guild.voice_channels, name = 'General')
-    guild = discord.utils.get(bot.guilds, name = SERVER)
-    voice = discord.utils.get(bot.voice_clients, guild = guild)
-
     await voice_channel.connect()
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
 
-    search = ''.join(search)
-    youtube_search = VideosSearch(search, limit = 1)
-    youtube_URL = [youtube_search.result()['result'][0]['link']]
+    search = ' '.join(search)
+    spotify_search = (sp.search(q = search, type = 'track', limit = 10))['tracks']['items'][0]['id']
+    youtube_search = VideosSearch(spotify_search, limit = 1)
+    youtube_url = youtube_search.result()['result'][0]['link']
+    ydl_options = {'format': 'bestaudio'}
 
-    print(youtube_URL)
-
-    song_there = os.path.isfile('song.mp3')
-    try:
-        if song_there:
-            os.remove('song.mp3')
-    except PermissionError:
-        await ctx.send('Wait for the current song to end.')
-        return
-
-    ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        ydl.download(youtube_URL)
-
-    for file in os.listdir('./'):
-        if file.endswith('.mp3'):
-            os.rename(file, 'song.mp3')
-    voice.play(discord.FFmpegPCMAudio('song.mp3'))
+    with youtube_dl.YoutubeDL(ydl_options) as ydl:
+        song_information = ydl.extract_info(youtube_url, download = False)
+        discord_url = song_information['formats'][0]['url']
+        source = await discord.FFmpegOpusAudio.from_probe(discord_url)
+        voice.play(source)
 
     await ctx.send('Playing ...')
 
@@ -95,11 +89,12 @@ async def play(ctx, *search):
 async def play_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('Please specify a song name.')
+    else:
+        print(error)
 
 @bot.command(name = 'resume', help = 'Resume the music')
 async def resume(ctx):
-    guild = discord.utils.get(bot.guilds, name = SERVER)
-    voice = discord.utils.get(bot.voice_clients, guild = guild)
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
     if voice is not None and voice.is_paused():
         voice.resume()
         await ctx.send('Resuming ...')
