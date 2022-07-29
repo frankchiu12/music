@@ -1,3 +1,4 @@
+from dis import dis
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -72,8 +73,8 @@ async def play(ctx, *search):
     voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
 
     search = ' '.join(search)
-    spotify_search = (sp.search(q = search, type = 'track', limit = 10))['tracks']['items'][0]['id']
-    youtube_search = VideosSearch(spotify_search, limit = 1)
+    spotify_id = (sp.search(q = search, type = 'track', limit = 10))['tracks']['items'][0]['id']
+    youtube_search = VideosSearch(spotify_id, limit = 1)
     youtube_url = youtube_search.result()['result'][0]['link']
     ydl_options = {'format': 'bestaudio'}
 
@@ -84,6 +85,15 @@ async def play(ctx, *search):
         voice.play(source)
 
     await ctx.send('Playing ...')
+    print(ctx.author.color)
+    embed = discord.Embed(title = 'Song Information', color = ctx.author.color)
+    song_name = sp.track(spotify_id)['name']
+    artist_list = []
+    for artist in sp.track(id)['artists']:
+        artist_list.append(artist['name'])
+    embed.add_field(name = 'Song Name', value = song_name, inline = True)
+    embed.add_field(name = 'Song Artist', value = artist_list, inline = True)
+    await ctx.send(embed = embed)
 
 @play.error
 async def play_error(ctx, error):
@@ -102,3 +112,5 @@ async def resume(ctx):
         await ctx.send('The music_bot is currently paused.')
 
 bot.run(TOKEN)
+
+#
