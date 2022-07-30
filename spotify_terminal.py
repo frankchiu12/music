@@ -172,6 +172,8 @@ def command(id):
             track_name = track_name.partition(' - From')[0]
         if ' (feat.' in track_name:
             track_name = track_name.partition(' (feat.')[0]
+        if ' (with ' in track_name:
+            track_name = track_name.partition(' (with ')[0]
         print('Searching ...' + '\n')
         sys.stdout = open(os.devnull, 'w')
         genius_searched_track = genius.search_song(track_name, main_artist)
