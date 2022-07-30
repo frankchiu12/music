@@ -417,6 +417,25 @@ def internal_search(id, counter_to_information, type):
     elif x.isdigit():
         print('\n' + 'The number inputted is outside of the result list size of ' + str(list_size) + '.' +'\n')
         internal_search(id, counter_to_information, type)
+    elif x == '!play':
+        if type == 'track':
+            print('\n' + 'That command is reserved for items of type ' + colored('album/playlist/artist', 'magenta') + '.' + '\n')
+            internal_search(id, counter_to_information, type)
+        elif type == 'artist':
+            artist_URI = sp.artist(new_id)['uri']
+            sp.start_playback(device_id = 'bddcb19206692c58a23c8c88a13144e1d7e4541e', context_uri = artist_URI)
+            print('\n' + 'Playing ...' + '\n')
+            internal_search(id, counter_to_information, type)
+        elif type == 'playlist':
+            playlist_URI = sp.playlist(new_id)['uri']
+            sp.start_playback(device_id = 'bddcb19206692c58a23c8c88a13144e1d7e4541e', context_uri = playlist_URI)
+            print('\n' + 'Playing ...' + '\n')
+            internal_search(id, counter_to_information, type)
+        elif type == 'album':
+            album_URI = sp.album(new_id)['uri']
+            sp.start_playback(device_id = 'bddcb19206692c58a23c8c88a13144e1d7e4541e', context_uri = album_URI)
+            print('\n' + 'Playing ...' + '\n')
+            internal_search(id, counter_to_information, type)
     elif x == '!open':
         if type == 'track':
             print('\n' + 'That command is reserved for items of type ' + colored('album/playlist/artist', 'magenta') + '.' + '\n')
