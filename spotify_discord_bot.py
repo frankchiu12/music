@@ -143,54 +143,6 @@ async def play(ctx, *search):
             genius_searched_track = genius.search_song(song_name, artist_name_list[0])
             await ctx.send(genius_searched_track.lyrics)
         if str(reaction.emoji) == artist_emoji:
-            # main_artist = sp.artist(artist_id)['name']
-            # if main_artist in artist_list:
-            #     artist_list.remove(main_artist)
-            # artist_URL = sp.artist(artist_id)['external_urls']['spotify']
-            # genre_list = str(sp.artist(artist_URL)['genres'])
-            # popularity = str(sp.artist(artist_URL)['popularity'])
-            # total_followers = str(sp.artist(artist_URL)['followers']['total'])
-            # if len(artist_list) != 0:
-            #     print(colored(' ' + str(main_artist) + ' ', 'grey', on_color = 'on_white') + ' with ' + str(artist_list) + '\n')
-            # else:
-            #     print(colored(' ' + str(main_artist) + ' ', 'grey', on_color = 'on_white') + '\n')
-            # print(colored('Genres: ', 'red') + genre_list)
-            # print(colored('Popularity: ', 'yellow') + popularity)
-            # print(colored('Total Followers: ', 'green') + total_followers)
-
-            # related_artist_list = []
-            # for related_artist in sp.artist_related_artists(artist_URL)['artists']:
-            #     related_artist_list.append(related_artist['name'])
-            # print(colored('Related Artists: ', 'blue') + str(related_artist_list))
-
-            # print(colored('Top Tracks:', 'magenta'))
-            # counter_to_artist_information = {}
-            # counter = 1
-            # for track in sp.artist_top_tracks(artist_URL)['tracks']:
-            #     track_name = track['name']
-            #     main_artist = track['artists'][0]['name']
-            #     co_artist_list = []
-            #     for co_artist in track['artists']:
-            #         co_artist_list.append(co_artist['name'])
-            #     if main_artist in co_artist_list:
-            #         co_artist_list.remove(main_artist)
-            #     if counter not in counter_to_artist_information:
-            #         counter_to_artist_information[counter] = track_name + ' ' + main_artist
-            #     if len(co_artist_list) != 0:
-            #         print(str(counter) + '. ' + colored(track_name, 'cyan') + colored(' with ', 'grey') + str(co_artist_list))
-            #     else:
-            #         print(str(counter) + '. ' + colored(track_name, 'cyan'))
-            #     counter += 1
-
-            # print(colored('Albums:', attrs = ['bold', 'underline', 'dark']))
-            # counter = 1
-            # for album in sp.artist_albums(artist_URL)['items']:
-            #     album_name = album['name']
-            #     album_total_tracks = str(album['total_tracks'])
-            #     print(str(counter) + '. ' + colored(album_name, 'cyan') + colored(' with ', 'grey') + album_total_tracks + ' track(s)')
-            #     counter += 1
-            # print('')
-            # internal_search(id, counter_to_artist_information, 'artist')
             pass
 
 @play.error
