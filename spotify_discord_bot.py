@@ -162,5 +162,3 @@ async def resume(ctx):
         await ctx.send('The music_bot is already playing.')
 
 bot.run(TOKEN)
-
-# https://stackoverflow.com/questions/61019583/count-reactions-on-message-and-perform-action-after-there-is-a-certain-amount-of

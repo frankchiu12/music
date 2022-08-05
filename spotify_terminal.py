@@ -113,10 +113,10 @@ def command(id):
         artist_id = [id, main_artist_id]
         get_artist_information(artist_id, artist_list)
 
-    elif x == 'continue':
+    elif x == 'resume':
         if not sp.current_playback()['is_playing']:
             sp.start_playback()
-            print_and_clear(id, 'Continuing ...')
+            print_and_clear(id, 'Resuming ...')
         else:
             print_and_clear(id, 'Already playing.')
 
@@ -148,10 +148,10 @@ def command(id):
         for playlist in sp.featured_playlists()['playlists']['items']:
             playlist_id = playlist['id']
             playlist_name = playlist['name']
-            owner = playlist['owner']['display_name']
+            playlist_owner = playlist['owner']['display_name']
             if counter not in counter_to_featured_playlist_information:
                 counter_to_featured_playlist_information[counter] = '#featured, id: ' + playlist_id
-            print(str(counter) + '. ' + colored(playlist_name, 'red') + ' by ' + colored(owner, 'blue'))
+            print(str(counter) + '. ' + colored(playlist_name, 'red') + ' by ' + colored(playlist_owner, 'blue'))
             counter += 1
         print('')
         internal_search(id, counter_to_featured_playlist_information, 'playlist')
@@ -383,8 +383,8 @@ def search_helper(x, external_search):
         counter = 1
         counter_to_information = {}
         for id, information in id_to_information.items():
-            item_name = information[0]
             id = str(id)
+            item_name = information[0]
             if type != 'artist' and type != 'playlist':
                 artist_list = str(information[1])
                 colored_description = colored(item_name, 'red') + ' by ' + colored(artist_list, 'blue') + ', id: ' + colored(id, 'green')
@@ -419,7 +419,7 @@ def internal_search(id, counter_to_information, type):
         internal_search(id, counter_to_information, type)
     elif x == '!play':
         if type == 'track':
-            print('\n' + 'That command is reserved for items of type ' + colored('album/playlist/artist', 'magenta') + '.' + '\n')
+            print('\n' + 'That command is reserved for items of type ' + colored('artist/playlist/album', 'magenta') + '.' + '\n')
             internal_search(id, counter_to_information, type)
         elif type == 'artist':
             artist_URI = sp.artist(new_id)['uri']
@@ -438,7 +438,7 @@ def internal_search(id, counter_to_information, type):
             internal_search(id, counter_to_information, type)
     elif x == '!open':
         if type == 'track':
-            print('\n' + 'That command is reserved for items of type ' + colored('album/playlist/artist', 'magenta') + '.' + '\n')
+            print('\n' + 'That command is reserved for items of type ' + colored('artist/playlist/album', 'magenta') + '.' + '\n')
             internal_search(id, counter_to_information, type)
         elif type == 'artist':
             artist_URL = sp.artist(new_id)['external_urls']['spotify']
@@ -457,7 +457,7 @@ def internal_search(id, counter_to_information, type):
             internal_search(id, counter_to_information, type)
     elif x == '!image':
         if type == 'track':
-            print('\n' + 'That command is reserved for items of type ' + colored('album/playlist/artist', 'magenta') + '.' + '\n')
+            print('\n' + 'That command is reserved for items of type ' + colored('artist/playlist/album', 'magenta') + '.' + '\n')
             internal_search(id, counter_to_information, type)
         elif type == 'artist':
             artist_URL = sp.artist(new_id)['images'][0]['url']
@@ -467,7 +467,7 @@ def internal_search(id, counter_to_information, type):
         elif type == 'playlist':
             playlist_URL = sp.playlist(new_id)['images'][0]['url']
             webbrowser.open(playlist_URL)
-            print('\n' + 'Opening playlist page ...' + '\n')
+            print('\n' + 'Opening playlist image ...' + '\n')
             internal_search(id, counter_to_information, type)
         elif type == 'album':
             album_URL = sp.album(new_id)['images'][0]['url']
@@ -477,6 +477,8 @@ def internal_search(id, counter_to_information, type):
     elif x == '!back':
         print('\033c', end = None)
         command(original_id)
+    elif x == '!redo':
+        main()
     else:
         search_helper(x, True)
 
@@ -547,7 +549,6 @@ def get_artist_information(id, artist_list):
     print(colored('Genres: ', 'red') + genre_list)
     print(colored('Popularity: ', 'yellow') + popularity)
     print(colored('Total Followers: ', 'green') + total_followers)
-
     related_artist_list = []
     for related_artist in sp.artist_related_artists(artist_id)['artists']:
         related_artist_list.append(related_artist['name'])
@@ -576,8 +577,8 @@ def get_artist_information(id, artist_list):
     counter = 1
     for album in sp.artist_albums(artist_id)['items']:
         album_name = album['name']
-        album_total_tracks = str(album['total_tracks'])
-        print(str(counter) + '. ' + colored(album_name, 'cyan') + colored(' with ', 'grey') + album_total_tracks + ' track(s)')
+        total_tracks = str(album['total_tracks'])
+        print(str(counter) + '. ' + colored(album_name, 'cyan') + colored(' with ', 'grey') + total_tracks + ' track(s)')
         counter += 1
     print('')
     internal_search(id, counter_to_artist_information, 'artist')
@@ -636,7 +637,7 @@ def get_user_information(id):
     print(colored('Followers: ', 'yellow') + followers)
     print(colored('User Link: ', 'green') + user_link)
 
-    print(colored('User Top Tracks: ', 'blue'))
+    print(colored('Top Tracks: ', 'blue'))
     counter_to_user_information = {}
     counter = 1
     for track in sp.current_user_top_tracks()['items']:
@@ -650,7 +651,7 @@ def get_user_information(id):
         print(str(counter) + '. ' + colored(track_name, 'cyan') + colored(' by ', 'grey') + str(artist_list))
         counter += 1
 
-    print(colored('User Top Artists', 'magenta'))
+    print(colored('Top Artists', 'magenta'))
     counter = 1
     for artist in sp.current_user_top_artists()['items']:
         print(str(counter) + '. ' + colored(artist['name'], 'cyan'))
@@ -693,7 +694,7 @@ def get_playlist_information(id):
     print(colored('Playlist Owner: ', 'green') + playlist_owner)
     print(colored('Total Followers: ', 'blue') + str(total_followers))
 
-    print(colored('Playlist Tracks: ', 'magenta'))
+    print(colored('Tracks: ', 'magenta'))
     counter_to_playlist_information = {}
     counter = 1
     for track in sp.playlist_tracks(playlist_id)['items']:
