@@ -136,6 +136,7 @@ async def play(ctx, *search):
         def check(reaction, user):
             return user == ctx.author and str(reaction.emoji) in valid_reactions
         reaction, user = await bot.wait_for('reaction_add', timeout = 60.0, check = check)
+
         if str(reaction.emoji) == lyrics_emoji:
             song_name = sp.track(song_id)['name']
             if ' - From' in song_name:
@@ -146,6 +147,7 @@ async def play(ctx, *search):
                 song_name = song_name.partition(' (with ')[0]
             genius_searched_track = genius.search_song(song_name, artist_name_list[0])
             await ctx.send(genius_searched_track.lyrics)
+
         if str(reaction.emoji) == artist_emoji:
             genre_list = str(sp.artist(main_artist_id)['genres'])
             popularity = str(sp.artist(main_artist_id)['popularity'])
@@ -154,7 +156,7 @@ async def play(ctx, *search):
             for related_artist in sp.artist_related_artists(main_artist_id)['artists']:
                 related_artist_list.append(related_artist['name'])
             link = sp.artist(main_artist_id)['external_urls']['spotify']
-            artist_top_track_list = []
+            artist_top_song_list = []
             counter = 1
             for song in sp.artist_top_tracks(main_artist_id)['tracks']:
                     song_name = song['name']
@@ -165,11 +167,11 @@ async def play(ctx, *search):
                     if main_artist in co_artist_list:
                         co_artist_list.remove(main_artist)
                     if len(co_artist_list) != 0:
-                        artist_top_track_list.append(str(counter) + '. ' + song_name + ' with ' + str(co_artist_list))
+                        artist_top_song_list.append(str(counter) + '. ' + song_name + ' with ' + str(co_artist_list))
                     else:
-                        artist_top_track_list.append(str(counter) + '. ' + song_name)
+                        artist_top_song_list.append(str(counter) + '. ' + song_name)
                     counter += 1
-            artist_top_track_string = '\n'.join(artist_top_track_list)
+            artist_top_song_string = '\n'.join(artist_top_song_list)
             artist_album_list = []
             counter = 1
             for album in sp.artist_albums(main_artist_id, limit = 10)['items']:
@@ -191,9 +193,10 @@ async def play(ctx, *search):
             album_embed.add_field(name = 'Total Followers ❤️', value = total_followers, inline = False)
             album_embed.add_field(name = 'Related Artists 👥', value = related_artist_list, inline = False)
             album_embed.add_field(name = 'Link 🔗', value = link, inline = False)
-            album_embed.add_field(name = 'Artist Top Tracks 📈', value = artist_top_track_string, inline = False)
+            album_embed.add_field(name = 'Artist Top Songs 📈', value = artist_top_song_string, inline = False)
             album_embed.add_field(name = 'Artist Album 🎶', value = artist_album_string, inline = False)
             await ctx.send(embed = album_embed)
+
         if str(reaction.emoji) == album_emoji:
             album_id = sp.track(song_id)['album']['id']
             album_type = sp.album(album_id)['album_type']
@@ -207,6 +210,16 @@ async def play(ctx, *search):
             label = str(sp.album(album_id)['label'])
             link = sp.album(album_id)['external_urls']['spotify']
             album_image_URL = sp.album(album_id)['images'][0]['url']
+            album_song_list = []
+            counter = 1
+            for song in sp.album_tracks(album_id)['items']:
+                song_name = song['name']
+                artist_list = []
+                for artist in song['artists']:
+                    artist_list.append(artist['name'])
+                album_song_list.append(str(counter) + '. ' + song_name + ' with ' + str(artist_list))
+                counter += 1
+            album_song_string = '\n'.join(album_song_list)
 
             album_embed = discord.Embed(title = 'Album Information', color = discord.Colour.green())
             album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
@@ -223,6 +236,7 @@ async def play(ctx, *search):
             album_embed.add_field(name = 'Popularity 🔥', value = popularity, inline = False)
             album_embed.add_field(name = 'Label', value = label, inline = False)
             album_embed.add_field(name = 'Link 🔗', value = link, inline = False)
+            album_embed.add_field(name = 'Album Songs 🎵', value = album_song_string, inline = False)
             await ctx.send(embed = album_embed)
 
 @play.error
@@ -290,12 +304,13 @@ async def artist(ctx, *search):
     album_embed.add_field(name = 'Total Followers ❤️', value = total_followers, inline = False)
     album_embed.add_field(name = 'Related Artists 👥', value = related_artist_list, inline = False)
     album_embed.add_field(name = 'Link 🔗', value = link, inline = False)
-    album_embed.add_field(name = 'Artist Top Tracks 📈', value = artist_top_track_string, inline = False)
+    album_embed.add_field(name = 'Artist Top Songs 📈', value = artist_top_track_string, inline = False)
     album_embed.add_field(name = 'Artist Album 🎶', value = artist_album_string, inline = False)
     await ctx.send(embed = album_embed)
 
 @bot.command(name = 'album', help = 'Search up album information')
 async def album(ctx, *search):
+    search = ' '.join(search)
     album_id = (sp.search(q = search, type = 'album', limit = 10))['albums']['items'][0]['id']
     album_name = sp.album(album_id)['name']
     album_type = sp.album(album_id)['album_type']
@@ -309,6 +324,16 @@ async def album(ctx, *search):
     label = str(sp.album(album_id)['label'])
     link = sp.album(album_id)['external_urls']['spotify']
     album_image_URL = sp.album(album_id)['images'][0]['url']
+    album_song_list = []
+    counter = 1
+    for song in sp.album_tracks(album_id)['items']:
+        song_name = song['name']
+        artist_list = []
+        for artist in song['artists']:
+            artist_list.append(artist['name'])
+        album_song_list.append(str(counter) + '. ' + song_name + ' with ' + str(artist_list))
+        counter += 1
+    album_song_string = '\n'.join(album_song_list)
 
     album_embed = discord.Embed(title = 'Album Information', color = discord.Colour.green())
     album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
@@ -324,8 +349,87 @@ async def album(ctx, *search):
     album_embed.add_field(name = 'Popularity 🔥', value = popularity, inline = False)
     album_embed.add_field(name = 'Label', value = label, inline = False)
     album_embed.add_field(name = 'Link 🔗', value = link, inline = False)
+    album_embed.add_field(name = 'Album Songs 🎵', value = album_song_string, inline = False)
     await ctx.send(embed = album_embed)
+
+@bot.command(name = 'playlist', help = 'Search up playlist information')
+async def new(ctx, *search):
+    search = ' '.join(search)
+    playlist_id = (sp.search(q = search, type = 'playlist', limit = 10))['playlists']['items'][0]['id']
+    playlist_name = sp.playlist(playlist_id)['name']
+    playlist_description = sp.playlist(playlist_id)['description']
+    if playlist_description == '':
+        playlist_description = 'None'
+    playlist_owner = sp.playlist(playlist_id)['owner']['display_name']
+    total_followers = sp.playlist(playlist_id)['followers']['total']
+    playlist_song_list = []
+    counter = 1
+    for song in sp.playlist_tracks(playlist_id)['items']:
+        song_name = song['track']['name']
+        artist_list = []
+        for artist in song['track']['artists']:
+            artist_list.append(artist['name'])
+        playlist_song_list.append(str(counter) + '. ' + song_name + ' with ' + str(artist_list))
+        counter += 1
+        if counter > 10:
+            break
+    playlist_song_string = '\n'.join(playlist_song_list)
+    playlist_embed = discord.Embed(title = 'Playlist Information', color = discord.Colour.purple())
+    playlist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+    # playlist_embed.set_image(url = album_image_URL)
+    playlist_embed.timestamp = datetime.datetime.utcnow()
+    playlist_embed.set_footer(text = '\u200b', icon_url = 'https://d2gg9evh47fn9z.cloudfront.net/800px_COLOURBOX5629612.jpg')
+    playlist_embed.add_field(name = 'Playlist Name 🎶', value = playlist_name, inline = False)
+    playlist_embed.add_field(name = 'Playlist Description 📝', value = playlist_description, inline = False)
+    playlist_embed.add_field(name = 'Playlist Owner 🎨', value = playlist_owner, inline = False)
+    playlist_embed.add_field(name = 'Total Followers ❤️', value = total_followers, inline = False)
+    playlist_embed.add_field(name = 'Playlist Songs (10) 🎵', value = playlist_song_string, inline = False)
+    await ctx.send(embed = playlist_embed)
+
+@bot.command(name = 'new', help = 'Search up new album releases on Spotify')
+async def new(ctx):
+    newly_released_album_list = []
+    counter = 1
+    for album in sp.new_releases()['albums']['items']:
+        album_name = album['name']
+        artist_list = []
+        for artist in album['artists']:
+            artist_list.append(artist['name'])
+        newly_released_album_list.append(str(counter) + '. ' + album_name + ' with ' + str(artist_list))
+        counter += 1
+    newly_released_album_string = '\n'.join(newly_released_album_list)
+
+    newly_released_album_embed = discord.Embed(title = 'New Releases (Spotify)', color = discord.Colour.gold())
+    newly_released_album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+    newly_released_album_embed.set_image(url = 'https://storage.googleapis.com/pr-newsroom-wp/1/2019/10/New-Release-Burst2.jpg')
+    newly_released_album_embed.timestamp = datetime.datetime.utcnow()
+    newly_released_album_embed.set_footer(text = '\u200b', icon_url = 'https://d2gg9evh47fn9z.cloudfront.net/800px_COLOURBOX5629612.jpg')
+    newly_released_album_embed.add_field(name = 'List 📝', value = newly_released_album_string, inline = False)
+    await ctx.send(embed = newly_released_album_embed)
+
+@bot.command(name = 'featured', help = 'Search up featured playlist releases on Spotify')
+async def featured(ctx):
+    featured_playlist_list = []
+    counter = 1
+    for playlist in sp.featured_playlists()['playlists']['items']:
+        playlist_name = playlist['name']
+        playlist_owner = playlist['owner']['display_name']
+        featured_playlist_list.append(str(counter) + '. ' + playlist_name + ' by ' + playlist_owner)
+        counter += 1
+    featured_playlist_string = '\n'.join(featured_playlist_list)
+
+    featured_playlist_embed = discord.Embed(title = 'Featured Releases (Spotify)', color = discord.Colour.magenta())
+    featured_playlist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+    featured_playlist_embed.set_image(url = 'https://storage.googleapis.com/pr-newsroom-wp/1/2021/03/SPOTIFY_US_FOR-THE-RECORD_PR-ASSET_032521_V2_CF-01.jpg')
+    featured_playlist_embed.timestamp = datetime.datetime.utcnow()
+    featured_playlist_embed.set_footer(text = '\u200b', icon_url = 'https://d2gg9evh47fn9z.cloudfront.net/800px_COLOURBOX5629612.jpg')
+    featured_playlist_embed.add_field(name = 'List 📝', value = featured_playlist_string, inline = False)
+    await ctx.send(embed = featured_playlist_embed)
 
 bot.run(TOKEN)
 
 # https://stackoverflow.com/questions/67722188/add-button-components-to-a-message-discord-py, https://www.youtube.com/watch?v=NtoMyB8XcQU
+
+# https://stackoverflow.com/questions/65768920/how-to-make-a-discord-music-bot-to-recognize-the-end-of-song-or-where-it-is-play
+
+# if no search throw warning
