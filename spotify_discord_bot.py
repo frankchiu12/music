@@ -1,3 +1,5 @@
+from multiprocessing import context
+from socket import timeout
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -8,6 +10,7 @@ import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
 import datetime
+import asyncio
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -25,7 +28,7 @@ sp = spotipy.Spotify(auth = spotify_token)
 genius_token = 'Q8q2Cs-4YkZT_83az4gYWpQrkSthadNOWMeuJhJOmHmIB3sBj3_HMX9SY2gR2HC5'
 genius = Genius(genius_token)
 
-queue = []
+song_queue = []
 
 @bot.event
 async def on_ready():
@@ -73,11 +76,11 @@ async def play(ctx, *search):
             song_information = ydl.extract_info(youtube_url, download = False)
             discord_url = song_information['formats'][0]['url']
             source = await discord.FFmpegOpusAudio.from_probe(discord_url, **FFMPEG_OPTIONS)
-            voice.play(source)
+            voice.play(source, after = lambda e: asyncio.run(next(ctx)))
         await ctx.send('Playing ... 😌')
-        await play_helper(ctx, song_id, youtube_url)
+        await reaction(ctx, song_id, youtube_url)
 
-async def play_helper(ctx, song_id, youtube_url):
+async def reaction(ctx, song_id, youtube_url):
     artist_name_list = []
     artist_id_list = []
     for artist in sp.track(song_id)['artists']:
@@ -231,11 +234,6 @@ async def play_helper(ctx, song_id, youtube_url):
             album_embed.add_field(name = 'Album Songs 🎵', value = album_song_string, inline = False)
             await ctx.send(embed = album_embed)
 
-# @play.error
-# async def play_error(ctx, error):
-#     if isinstance(error, commands.MissingRequiredArgument):
-#         await ctx.send('No search query. Please try again.')
-
 @bot.command(name = 'resume', help = 'Resume the music')
 async def resume(ctx):
     voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
@@ -262,6 +260,38 @@ async def disconnect(ctx):
         await ctx.send('Disconnected.')
     else:
         await ctx.send('The music_bot is not currently connected to a voice channel.')
+
+@bot.command(name = 'queue', help = 'Queue a song given a search query')
+async def queue(ctx, *search):
+    search = ' '.join(search)
+    if search == '':
+        await ctx.send('No search query. Please try again.')
+    else:
+        song_id = (sp.search(q = search, type = 'track', limit = 10))['tracks']['items'][0]['id']
+        song_queue.append(song_id)
+
+@bot.command(name = 'next', help = 'Skip to the next song')
+async def next(ctx):
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
+    if len(song_queue) != 0:
+        next_song_id = song_queue.pop(0)
+        spotify_song_name = sp.track(next_song_id)['name']
+        spotify_song_main_artist = sp.track(next_song_id)['artists'][0]['name']
+        youtube_search = VideosSearch(spotify_song_name + ' ' + spotify_song_main_artist, limit = 1)
+        youtube_url = youtube_search.result()['result'][0]['link']
+        FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+        ydl_options = {'format': 'bestaudio'}
+        with youtube_dl.YoutubeDL(ydl_options) as ydl:
+            song_information = ydl.extract_info(youtube_url, download = False)
+            discord_url = song_information['formats'][0]['url']
+            source = await discord.FFmpegOpusAudio.from_probe(discord_url, **FFMPEG_OPTIONS)
+            voice.play(source, after = lambda e: asyncio.run(next(ctx)))
+        # TODO
+        await ctx.send('Playing ... 😌')
+        await reaction(ctx, next_song_id, youtube_url)
+    else:
+        await ctx.send('No song in queue.')
+        await voice.disconnect()
 
 @bot.command(name = 'artist', help = 'Search up artist information')
 async def artist(ctx, *search):
@@ -449,4 +479,4 @@ bot.run(TOKEN)
 
 # https://stackoverflow.com/questions/67722188/add-button-components-to-a-message-discord-py, https://www.youtube.com/watch?v=NtoMyB8XcQU
 
-# https://stackoverflow.com/questions/65768920/how-to-make-a-discord-music-bot-to-recognize-the-end-of-song-or-where-it-is-play
+# show queue
