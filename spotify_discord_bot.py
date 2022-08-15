@@ -1,13 +1,13 @@
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+import os
 from youtubesearchpython import *
 import youtube_dl
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
 import datetime
-import os
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -42,28 +42,9 @@ async def on_ready():
     print(f'Guild Members:\n - {members}')
     print('')
 
-@bot.command(name = 'hi', help = 'Responds to hi')
+@bot.command(name = 'hi', help = 'Respond to hi')
 async def hi(ctx):
-    response = 'hi! ☄️🍼🐣🐥🐎'
-    await ctx.send(response)
-
-@bot.command(name = 'disconnect', help = 'Make the bot disconnect from the current voice channel')
-async def disconnect(ctx):
-    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
-    if voice is not None:
-        await voice.disconnect()
-        await ctx.send('Disconnected.')
-    else:
-        await ctx.send('The music_bot is not connected to a voice channel.')
-
-@bot.command(name = 'pause', help = 'Pause the music')
-async def pause(ctx):
-    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
-    if voice is not None and voice.is_playing():
-        voice.pause()
-        await ctx.send('Paused.')
-    else:
-        await ctx.send('The music_bot is not currently playing.')
+    await ctx.send('hi! ☄️🍼🐣🐥🐎')
 
 @bot.command(name = 'play', help = 'Play given a search query')
 async def play(ctx, *search):
@@ -255,75 +236,93 @@ async def resume(ctx):
     else:
         await ctx.send('The music_bot is already playing.')
 
+@bot.command(name = 'pause', help = 'Pause the music')
+async def pause(ctx):
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
+    if voice is not None and voice.is_playing():
+        voice.pause()
+        await ctx.send('Paused.')
+    else:
+        await ctx.send('The music_bot is not currently playing.')
+
+@bot.command(name = 'disconnect', help = 'Disconnect the bot from the current voice channel')
+async def disconnect(ctx):
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
+    if voice is not None:
+        await voice.disconnect()
+        await ctx.send('Disconnected.')
+    else:
+        await ctx.send('The music_bot is not currently connected to a voice channel.')
+
 @bot.command(name = 'artist', help = 'Search up artist information')
 async def artist(ctx, *search):
     search = ' '.join(search)
-    main_artist_id = (sp.search(q = search, type = 'artist'))['artists']['items'][0]['id']
-    artist_image_URL =  sp.artist(main_artist_id)['images'][0]['url']
-    artist_name = sp.artist(main_artist_id)['name']
-    genre_list = str(sp.artist(main_artist_id)['genres'])
-    popularity = str(sp.artist(main_artist_id)['popularity'])
-    total_followers = str(sp.artist(main_artist_id)['followers']['total'])
+    artist_id = (sp.search(q = search, type = 'artist'))['artists']['items'][0]['id']
+    artist_image_URL =  sp.artist(artist_id)['images'][0]['url']
+    artist_name = sp.artist(artist_id)['name']
+    genre_list = str(sp.artist(artist_id)['genres'])
+    popularity = str(sp.artist(artist_id)['popularity'])
+    total_followers = str(sp.artist(artist_id)['followers']['total'])
     related_artist_list = []
-    for related_artist in sp.artist_related_artists(main_artist_id)['artists']:
+    for related_artist in sp.artist_related_artists(artist_id)['artists']:
         related_artist_list.append(related_artist['name'])
-    link = sp.artist(main_artist_id)['external_urls']['spotify']
-    artist_top_track_list = []
+    link = sp.artist(artist_id)['external_urls']['spotify']
+    artist_top_song_list = []
     counter = 1
-    for song in sp.artist_top_tracks(main_artist_id)['tracks']:
-            song_name = song['name']
-            main_artist = song['artists'][0]['name']
-            co_artist_list = []
-            for co_artist in song['artists']:
-                co_artist_list.append(co_artist['name'])
-            if main_artist in co_artist_list:
-                co_artist_list.remove(main_artist)
-            if len(co_artist_list) != 0:
-                artist_top_track_list.append(str(counter) + '. ' + song_name + ' with ' + str(co_artist_list))
-            else:
-                artist_top_track_list.append(str(counter) + '. ' + song_name)
-            counter += 1
-    artist_top_track_string = '\n'.join(artist_top_track_list)
+    for song in sp.artist_top_tracks(artist_id)['tracks']:
+        song_name = song['name']
+        main_artist = song['artists'][0]['name']
+        co_artist_list = []
+        for co_artist in song['artists']:
+            co_artist_list.append(co_artist['name'])
+        if main_artist in co_artist_list:
+            co_artist_list.remove(main_artist)
+        if len(co_artist_list) != 0:
+            artist_top_song_list.append(str(counter) + '. ' + song_name + ' with ' + str(co_artist_list))
+        else:
+            artist_top_song_list.append(str(counter) + '. ' + song_name)
+        counter += 1
+    artist_top_song_string = '\n'.join(artist_top_song_list)
     artist_album_list = []
     counter = 1
-    for album in sp.artist_albums(main_artist_id, limit = 10)['items']:
+    for album in sp.artist_albums(artist_id, limit = 10)['items']:
         album_name = album['name']
-        total_tracks = str(album['total_tracks'])
-        artist_album_list.append(str(counter) + '. ' + album_name + ' with ' + total_tracks + ' song(s)')
+        total_songs = str(album['total_tracks'])
+        artist_album_list.append(str(counter) + '. ' + album_name + ' with ' + total_songs + ' song(s)')
         counter += 1
     artist_album_string = '\n'.join(artist_album_list)
 
-    album_embed = discord.Embed(title = 'Artist Information', color = discord.Colour.blue())
-    album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
-    album_embed.set_image(url = artist_image_URL)
-    album_embed.timestamp = datetime.datetime.utcnow()
-    album_embed.set_footer(text = '\u200b', icon_url = 'https://d2gg9evh47fn9z.cloudfront.net/800px_COLOURBOX5629612.jpg')
-    album_embed.add_field(name = 'Artist Name 🎨', value = artist_name[0], inline = False)
-    album_embed.add_field(name = 'Genres 📚', value = genre_list, inline = False)
-    album_embed.add_field(name = 'Popularity 🔥', value = popularity, inline = False)
-    album_embed.add_field(name = 'Total Followers ❤️', value = total_followers, inline = False)
-    album_embed.add_field(name = 'Related Artists 👥', value = related_artist_list, inline = False)
-    album_embed.add_field(name = 'Link 🔗', value = link, inline = False)
-    album_embed.add_field(name = 'Artist Top Songs 📈', value = artist_top_track_string, inline = False)
-    album_embed.add_field(name = 'Artist Album 🎶', value = artist_album_string, inline = False)
-    await ctx.send(embed = album_embed)
+    artist_embed = discord.Embed(title = 'Artist Information', color = discord.Colour.blue())
+    artist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+    artist_embed.set_image(url = artist_image_URL)
+    artist_embed.timestamp = datetime.datetime.utcnow()
+    artist_embed.set_footer(text = '\u200b', icon_url = 'https://www.kindpng.com/picc/m/567-5671142_clock-md-dodger-blue-clipart-png-blue-clock.png')
+    artist_embed.add_field(name = 'Artist Name 🎨', value = artist_name, inline = False)
+    artist_embed.add_field(name = 'Genres 📚', value = genre_list, inline = False)
+    artist_embed.add_field(name = 'Popularity 🔥', value = popularity, inline = False)
+    artist_embed.add_field(name = 'Total Followers ❤️', value = total_followers, inline = False)
+    artist_embed.add_field(name = 'Related Artists 👥', value = related_artist_list, inline = False)
+    artist_embed.add_field(name = 'Link 🔗', value = link, inline = False)
+    artist_embed.add_field(name = 'Artist Top Songs 📈', value = artist_top_song_string, inline = False)
+    artist_embed.add_field(name = 'Artist Albums 🎶', value = artist_album_string, inline = False)
+    await ctx.send(embed = artist_embed)
 
 @bot.command(name = 'album', help = 'Search up album information')
 async def album(ctx, *search):
     search = ' '.join(search)
     album_id = (sp.search(q = search, type = 'album', limit = 10))['albums']['items'][0]['id']
+    album_image_URL = sp.album(album_id)['images'][0]['url']
     album_name = sp.album(album_id)['name']
     album_type = sp.album(album_id)['album_type']
     artist_list = []
     for artist in sp.album(album_id)['artists']:
         artist_list.append(artist['name'])
     release_date = sp.album(album_id)['release_date']
-    total_tracks = str(sp.album(album_id)['total_tracks'])
+    total_songs = str(sp.album(album_id)['total_tracks'])
     genre_list = str(sp.album(album_id)['genres'])
     popularity = str(sp.album(album_id)['popularity'])
     label = str(sp.album(album_id)['label'])
     link = sp.album(album_id)['external_urls']['spotify']
-    album_image_URL = sp.album(album_id)['images'][0]['url']
     album_song_list = []
     counter = 1
     for song in sp.album_tracks(album_id)['items']:
@@ -339,15 +338,15 @@ async def album(ctx, *search):
     album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
     album_embed.set_image(url = album_image_URL)
     album_embed.timestamp = datetime.datetime.utcnow()
-    album_embed.set_footer(text = '\u200b', icon_url = 'https://d2gg9evh47fn9z.cloudfront.net/800px_COLOURBOX5629612.jpg')
+    album_embed.set_footer(text = '\u200b', icon_url = 'https://www.iconsdb.com/icons/preview/green/clock-xxl.png')
     album_embed.add_field(name = 'Album Name 🎶', value = album_name, inline = False)
     album_embed.add_field(name = 'Album Type 📂', value = album_type, inline = False)
     album_embed.add_field(name = 'Album Artists 🎨', value = artist_list, inline = False)
     album_embed.add_field(name = 'Release Date 🗓', value = release_date, inline = False)
-    album_embed.add_field(name = 'Total Tracks', value = total_tracks, inline = False)
+    album_embed.add_field(name = 'Total Songs 🔢', value = total_songs, inline = False)
     album_embed.add_field(name = 'Genres 📚', value = genre_list, inline = False)
     album_embed.add_field(name = 'Popularity 🔥', value = popularity, inline = False)
-    album_embed.add_field(name = 'Label', value = label, inline = False)
+    album_embed.add_field(name = 'Label 🏷', value = label, inline = False)
     album_embed.add_field(name = 'Link 🔗', value = link, inline = False)
     album_embed.add_field(name = 'Album Songs 🎵', value = album_song_string, inline = False)
     await ctx.send(embed = album_embed)
@@ -433,3 +432,5 @@ bot.run(TOKEN)
 # https://stackoverflow.com/questions/65768920/how-to-make-a-discord-music-bot-to-recognize-the-end-of-song-or-where-it-is-play
 
 # if no search throw warning
+
+# yt link
