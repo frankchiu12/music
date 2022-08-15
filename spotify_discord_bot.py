@@ -1,7 +1,5 @@
-from multiprocessing import context
-from socket import timeout
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import os
 from youtubesearchpython import *
@@ -9,8 +7,9 @@ import youtube_dl
 import spotipy
 import spotipy.util as util
 from lyricsgenius import Genius
-import datetime
 import asyncio
+import datetime
+import random
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -28,6 +27,7 @@ sp = spotipy.Spotify(auth = spotify_token)
 genius_token = 'Q8q2Cs-4YkZT_83az4gYWpQrkSthadNOWMeuJhJOmHmIB3sBj3_HMX9SY2gR2HC5'
 genius = Genius(genius_token)
 
+current_song_id = ''
 song_queue = []
 
 @bot.event
@@ -66,8 +66,13 @@ async def play(ctx, *search):
         await ctx.send('No search query. Please try again.')
     else:
         song_id = (sp.search(q = search, type = 'track', limit = 10))['tracks']['items'][0]['id']
+        global current_song_id
+        current_song_id = song_id
         spotify_song_name = sp.track(song_id)['name']
         spotify_song_main_artist = sp.track(song_id)['artists'][0]['name']
+        artist_list = []
+        for artist in sp.track(song_id)['artists']:
+            artist_list.append(artist['name'])
         youtube_search = VideosSearch(spotify_song_name + ' ' + spotify_song_main_artist, limit = 1)
         youtube_url = youtube_search.result()['result'][0]['link']
         FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
@@ -77,10 +82,15 @@ async def play(ctx, *search):
             discord_url = song_information['formats'][0]['url']
             source = await discord.FFmpegOpusAudio.from_probe(discord_url, **FFMPEG_OPTIONS)
             voice.play(source, after = lambda e: asyncio.run(next(ctx)))
-        await ctx.send('Playing ... 😌')
-        await reaction(ctx, song_id, youtube_url)
+        await ctx.send('Playing **' + spotify_song_name + '** by ' + str(artist_list) + ' 😌')
 
-async def reaction(ctx, song_id, youtube_url):
+@bot.command(name = 'information', help = 'Get song information')
+async def information(ctx):
+    song_id = current_song_id
+    spotify_song_name = sp.track(song_id)['name']
+    spotify_song_main_artist = sp.track(song_id)['artists'][0]['name']
+    youtube_search = VideosSearch(spotify_song_name + ' ' + spotify_song_main_artist, limit = 1)
+    youtube_url = youtube_search.result()['result'][0]['link']
     artist_name_list = []
     artist_id_list = []
     for artist in sp.track(song_id)['artists']:
@@ -139,7 +149,10 @@ async def reaction(ctx, song_id, youtube_url):
                 song_name = song_name.partition(' (with ')[0]
             genius_searched_track = genius.search_song(song_name, artist_name_list[0])
             try:
-                await ctx.send(genius_searched_track.lyrics)
+                if genius_searched_track is None:
+                    await ctx.send('Unfortunately, no lyrics were found. 🥲')
+                else:
+                    await ctx.send(genius_searched_track.lyrics)
             except discord.errors.HTTPException:
                 await ctx.send('The lyrics exceeded the character limit of 2000. To view the lyrics, please follow the link: ' + genius_searched_track.url)
 
@@ -269,12 +282,26 @@ async def queue(ctx, *search):
     else:
         song_id = (sp.search(q = search, type = 'track', limit = 10))['tracks']['items'][0]['id']
         song_queue.append(song_id)
+        song_name = sp.track(song_id)['name']
+        artist_list = []
+        for artist in sp.track(song_id)['artists']:
+            artist_list.append(artist['name'])
+        await ctx.send('Added **' + song_name + '** by ' + str(artist_list) + ' 😉')
 
-@bot.command(name = 'next', help = 'Skip to the next song')
+@bot.command(name = 'show_queue', help = 'Show the queue')
+
+@bot.command(name = 'clear_queue', help = 'Clear the entire song queue')
+async def clear_queue(ctx):
+    global song_queue
+    song_queue = []
+    await ctx.send('Queue clear. 🥺')
+
 async def next(ctx):
     voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
     if len(song_queue) != 0:
         next_song_id = song_queue.pop(0)
+        global current_song_id
+        current_song_id = next_song_id
         spotify_song_name = sp.track(next_song_id)['name']
         spotify_song_main_artist = sp.track(next_song_id)['artists'][0]['name']
         youtube_search = VideosSearch(spotify_song_name + ' ' + spotify_song_main_artist, limit = 1)
@@ -286,12 +313,6 @@ async def next(ctx):
             discord_url = song_information['formats'][0]['url']
             source = await discord.FFmpegOpusAudio.from_probe(discord_url, **FFMPEG_OPTIONS)
             voice.play(source, after = lambda e: asyncio.run(next(ctx)))
-        # TODO
-        await ctx.send('Playing ... 😌')
-        await reaction(ctx, next_song_id, youtube_url)
-    else:
-        await ctx.send('No song in queue.')
-        await voice.disconnect()
 
 @bot.command(name = 'artist', help = 'Search up artist information')
 async def artist(ctx, *search):
@@ -479,4 +500,8 @@ bot.run(TOKEN)
 
 # https://stackoverflow.com/questions/67722188/add-button-components-to-a-message-discord-py, https://www.youtube.com/watch?v=NtoMyB8XcQU
 
-# show queue
+# show queue, shuffle, loop, next
+
+# else:
+#     await ctx.send('No song in queue.')
+#     await voice.disconnect()
