@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands, tasks
+from discord.ui import Button, View
 from dotenv import load_dotenv
 import os
 from youtubesearchpython import *
@@ -14,7 +15,9 @@ import random
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 SERVER = os.getenv('DISCORD_SERVER')
-bot = commands.Bot(command_prefix = '!')
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix = '!', intents = intents)
 
 username = 'chiusiun'
 scope = 'user-read-currently-playing user-modify-playback-state user-read-playback-state user-read-recently-played user-top-read user-library-modify user-library-read'
@@ -86,8 +89,8 @@ async def play(ctx, *search):
             voice.play(source, after = lambda e: asyncio.run(next(ctx)))
         await ctx.send('Playing **' + spotify_song_name + '** by ' + str(artist_list) + ' 😌')
 
-@bot.command(name = 'get_info', help = 'Get song information')
-async def information(ctx):
+@bot.command(name = 'get_information', help = 'Get song information')
+async def get_information(ctx):
     song_id = current_song_id
     spotify_song_name = sp.track(song_id)['name']
     spotify_song_main_artist = sp.track(song_id)['artists'][0]['name']
@@ -115,7 +118,7 @@ async def information(ctx):
     link = sp.track(song_id)['external_urls']['spotify']
 
     song_embed = discord.Embed(title = 'Song Information', color = discord.Colour.red())
-    song_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+    song_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
     song_embed.set_thumbnail(url = artist_image_URL)
     song_embed.set_image(url = song_image_URL)
     song_embed.timestamp = datetime.datetime.utcnow()
@@ -197,7 +200,7 @@ async def information(ctx):
         artist_album_string = '\n'.join(artist_album_list)
 
         artist_embed = discord.Embed(title = 'Artist Information', color = discord.Colour.blue())
-        artist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+        artist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
         artist_embed.set_image(url = artist_image_URL)
         artist_embed.timestamp = datetime.datetime.utcnow()
         artist_embed.set_footer(text = '\u200b', icon_url = 'https://www.kindpng.com/picc/m/567-5671142_clock-md-dodger-blue-clipart-png-blue-clock.png')
@@ -239,7 +242,7 @@ async def information(ctx):
         album_song_string = '\n'.join(album_song_list)
 
         album_embed = discord.Embed(title = 'Album Information', color = discord.Colour.green())
-        album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+        album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
         album_embed.set_image(url = album_image_URL)
         album_embed.timestamp = datetime.datetime.utcnow()
         album_embed.set_footer(text = '\u200b', icon_url = 'https://www.iconsdb.com/icons/preview/green/clock-xxl.png')
@@ -262,7 +265,7 @@ async def resume(ctx):
         voice.resume()
         await ctx.send('Resuming ...')
     else:
-        await ctx.send('The music_bot is already playing.')
+        await ctx.send('The music_bot is already playing or disconnected.')
 
 @bot.command(name = 'pause', help = 'Pause the music')
 async def pause(ctx):
@@ -283,6 +286,33 @@ async def disconnect(ctx):
         await ctx.send('Disconnected.')
     else:
         await ctx.send('The music_bot is not currently connected to a voice channel.')
+
+@bot.command(name = 'button', help = 'Summon buttons for basic commands')
+async def button(ctx):
+    resume_button = Button(label = 'resume', style = discord.ButtonStyle.green, emoji = '▶️')
+    pause_button = Button(label = 'pause', style = discord.ButtonStyle.red, emoji = '⏸')
+    disconnect_button = Button(label = 'disconnect', style = discord.ButtonStyle.blurple, emoji = '⏹')
+
+    async def resume_button_call_back(interaction):
+        await interaction.response.defer()
+        await resume(ctx)
+    resume_button.callback = resume_button_call_back
+
+    async def pause_button_call_back(interaction):
+        await interaction.response.defer()
+        await pause(ctx)
+    pause_button.callback = pause_button_call_back
+
+    async def disconnect_button_call_back(interaction):
+        await interaction.response.defer()
+        await disconnect(ctx)
+    disconnect_button.callback = disconnect_button_call_back
+
+    view = View()
+    view.add_item(resume_button)
+    view.add_item(pause_button)
+    view.add_item(disconnect_button)
+    await ctx.send(view = view)
 
 @bot.command(name = 'queue', help = 'Queue a song given a search query')
 async def queue(ctx, *search):
@@ -316,7 +346,7 @@ async def show_queue(ctx):
         song_queue_string = 'No songs in queue. 🫡'
 
     song_queue_embed = discord.Embed(title = 'Song Queue', color = discord.Colour.lighter_grey())
-    song_queue_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+    song_queue_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
     song_queue_embed.set_image(url = 'https://upload.wikimedia.org/wikipedia/commons/7/74/Spotify_App_Logo.svg')
     song_queue_embed.timestamp = datetime.datetime.utcnow()
     song_queue_embed.set_footer(text = '\u200b', icon_url = 'https://foter.com/photos/245/unique-big-mirror-silver-wall-clock.jpg')
@@ -425,7 +455,7 @@ async def artist(ctx, *search):
         artist_album_string = '\n'.join(artist_album_list)
 
         artist_embed = discord.Embed(title = 'Artist Information', color = discord.Colour.blue())
-        artist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+        artist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
         artist_embed.set_image(url = artist_image_URL)
         artist_embed.timestamp = datetime.datetime.utcnow()
         artist_embed.set_footer(text = '\u200b', icon_url = 'https://www.kindpng.com/picc/m/567-5671142_clock-md-dodger-blue-clipart-png-blue-clock.png')
@@ -472,7 +502,7 @@ async def album(ctx, *search):
         album_song_string = '\n'.join(album_song_list)
 
         album_embed = discord.Embed(title = 'Album Information', color = discord.Colour.green())
-        album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+        album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
         album_embed.set_image(url = album_image_URL)
         album_embed.timestamp = datetime.datetime.utcnow()
         album_embed.set_footer(text = '\u200b', icon_url = 'https://www.iconsdb.com/icons/preview/green/clock-xxl.png')
@@ -516,7 +546,7 @@ async def playlist(ctx, *search):
         playlist_song_string = '\n'.join(playlist_song_list)
 
         playlist_embed = discord.Embed(title = 'Playlist Information', color = discord.Colour.purple())
-        playlist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+        playlist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
         playlist_embed.set_image(url = playlist_image_URL)
         playlist_embed.timestamp = datetime.datetime.utcnow()
         playlist_embed.set_footer(text = '\u200b', icon_url = 'https://i.pinimg.com/736x/8d/34/a2/8d34a201ca7e25b9efebf16bd6c5d217.jpg')
@@ -539,7 +569,7 @@ async def featured(ctx):
     featured_playlist_string = '\n'.join(featured_playlist_list)
 
     featured_playlist_embed = discord.Embed(title = 'Featured Releases (Spotify)', color = discord.Colour.gold())
-    featured_playlist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+    featured_playlist_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
     featured_playlist_embed.set_image(url = 'https://storage.googleapis.com/pr-newsroom-wp/1/2021/03/SPOTIFY_US_FOR-THE-RECORD_PR-ASSET_032521_V2_CF-01.jpg')
     featured_playlist_embed.timestamp = datetime.datetime.utcnow()
     featured_playlist_embed.set_footer(text = '\u200b', icon_url = 'https://cdn2.vectorstock.com/i/1000x1000/87/86/happy-new-year-background-gold-clock-vector-11288786.jpg')
@@ -560,7 +590,7 @@ async def new(ctx):
     newly_released_album_string = '\n'.join(newly_released_album_list)
 
     newly_released_album_embed = discord.Embed(title = 'New Releases (Spotify)', color = discord.Colour.magenta())
-    newly_released_album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.avatar_url)
+    newly_released_album_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
     newly_released_album_embed.set_image(url = 'https://storage.googleapis.com/pr-newsroom-wp/1/2019/10/New-Release-Burst2.jpg')
     newly_released_album_embed.timestamp = datetime.datetime.utcnow()
     newly_released_album_embed.set_footer(text = '\u200b', icon_url = 'https://ctl.s6img.com/society6/img/DvR8-sYQam2esV_naOzeLUsGEos/w_700/wall-clocks/front/natural-frame/white-hands/~artwork,fw_3500,fh_3500,fy_-10,iw_3500,ih_3519/s6-original-art-uploads/society6/uploads/misc/7f800cefc518478dab4727b0325fa404/~~/megenta-wall-clocks.jpg')
@@ -582,8 +612,7 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.CommandInvokeError):
         await ctx.send('An error has occurred. Please try again. 😟')
     else:
-        # TODO: change to pass
-        print(error)
+        pass
 
 @play.error
 async def client_exception_error(ctx, error):
@@ -597,6 +626,4 @@ async def client_exception_error(ctx, error):
 
 bot.run(TOKEN)
 
-# https://stackoverflow.com/questions/67722188/add-button-components-to-a-message-discord-py, https://www.youtube.com/watch?v=NtoMyB8XcQU
-
-# discord.errors.ClientException: Not connected to voice. and # 403
+# discord.errors.ClientException: Not connected to voice. 403
