@@ -42,16 +42,15 @@ async def on_ready():
         f'{bot.user.name} has connected to Discord! \n'
         f'{guild.name} (id: {guild.id}) \n'
     )
-
     members = '\n - '.join([member.name for member in guild.members])
     print(f'Guild Members:\n - {members}')
     print('')
-    
+
     on_inactivity.start()
 
 @bot.command(name = 'hi', help = 'Respond to hi')
 async def hi(ctx):
-    await ctx.send('hi! ☄️🍼🐣🐥🐎')
+    await ctx.send('hi yvette! ☄️🍼🐣🐥🐎')
 
 @bot.command(name = 'play', help = 'Play a song given a search query')
 async def play(ctx, *search):
@@ -87,7 +86,7 @@ async def play(ctx, *search):
             voice.play(source, after = lambda e: asyncio.run(next(ctx)))
         await ctx.send('Playing **' + spotify_song_name + '** by ' + str(artist_list) + ' 😌')
 
-@bot.command(name = 'info', help = 'Get song information')
+@bot.command(name = 'get_info', help = 'Get song information')
 async def information(ctx):
     song_id = current_song_id
     spotify_song_name = sp.track(song_id)['name']
@@ -132,10 +131,10 @@ async def information(ctx):
     song_embed.add_field(name = 'YouTube 🎥', value = youtube_url, inline = False)
     await ctx.send(embed = song_embed)
 
-    react_message = await ctx.send('React to this message for more commands ✅')
+    react_message = await ctx.send('React to this message for more commands ✅ (only one)')
     lyrics_emoji = '✍️'
     artist_emoji = '🎨'
-    album_emoji = '💽'
+    album_emoji = '🎶'
     valid_reactions = [lyrics_emoji, artist_emoji, album_emoji]
     await react_message.add_reaction(lyrics_emoji)
     await react_message.add_reaction(artist_emoji)
@@ -268,7 +267,7 @@ async def resume(ctx):
 @bot.command(name = 'pause', help = 'Pause the music')
 async def pause(ctx):
     voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
-    if voice is not None and voice.is_playing():
+    if voice and voice.is_playing():
         voice.pause()
         await ctx.send('Paused.')
     else:
@@ -277,7 +276,7 @@ async def pause(ctx):
 @bot.command(name = 'disconnect', help = 'Disconnect the bot from the current voice channel')
 async def disconnect(ctx):
     voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
-    if voice is not None:
+    if voice:
         global song_queue
         song_queue = []
         await voice.disconnect()
@@ -349,11 +348,10 @@ async def shuffle(ctx):
         await ctx.send('No songs in queue. 🫡')
     else:
         random.shuffle(song_queue)
-        await ctx.send('Shuffled!')
+        await ctx.send('Shuffled! 😤')
         await show_queue(ctx)
 
 async def next(ctx):
-    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
     if len(song_queue) != 0:
         next_song_id = song_queue.pop(0)
         global current_song_id
@@ -368,14 +366,16 @@ async def next(ctx):
             song_information = ydl.extract_info(youtube_url, download = False)
             discord_url = song_information['formats'][0]['url']
             source = await discord.FFmpegOpusAudio.from_probe(discord_url, **FFMPEG_OPTIONS)
+            voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
+            if not voice:
+                voice_channel = discord.utils.get(ctx.guild.voice_channels, name = 'General')
+                voice = await voice_channel.connect()
             voice.play(source, after = lambda e: asyncio.run(next(ctx)))
-        global reached_next_song
-        reached_next_song = True
 
 @bot.command(name = 'skip', help = 'Skip the current song')
-async def skip(ctx):
+async def skip(ctx): 
     voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
-    if voice is not None:
+    if voice:
         await voice.disconnect()
         voice_channel = discord.utils.get(ctx.guild.voice_channels, name = 'General')
         voice = await voice_channel.connect()
@@ -578,14 +578,25 @@ async def on_inactivity():
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        pass
-    if isinstance(error, commands.CommandInvokeError):
-        pass
+        await ctx.send('That command doesn\'t exist.')
+    elif isinstance(error, commands.CommandInvokeError):
+        await ctx.send('An error has occurred. Please try again. 😟')
     else:
+        # TODO: change to pass
         print(error)
+
+@play.error
+async def client_exception_error(ctx, error):
+    if isinstance(error, discord.errors.ClientException):
+        await ctx.send('An error has occurred. Please try again. 😟')
+
+@skip.error
+async def client_exception_error(ctx, error):
+    if isinstance(error, discord.errors.ClientException):
+        await ctx.send('An error has occurred. Please try again. 😟')
 
 bot.run(TOKEN)
 
 # https://stackoverflow.com/questions/67722188/add-button-components-to-a-message-discord-py, https://www.youtube.com/watch?v=NtoMyB8XcQU
 
-# 403
+# discord.errors.ClientException: Not connected to voice. and # 403
