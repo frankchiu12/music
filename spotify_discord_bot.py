@@ -382,6 +382,7 @@ async def shuffle(ctx):
         await show_queue(ctx)
 
 async def next(ctx):
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
     if len(song_queue) != 0:
         next_song_id = song_queue.pop(0)
         global current_song_id
@@ -397,9 +398,6 @@ async def next(ctx):
             discord_url = song_information['formats'][0]['url']
             source = await discord.FFmpegOpusAudio.from_probe(discord_url, **FFMPEG_OPTIONS)
             voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
-            if not voice:
-                voice_channel = discord.utils.get(ctx.guild.voice_channels, name = 'General')
-                voice = await voice_channel.connect()
             voice.play(source, after = lambda e: asyncio.run(next(ctx)))
 
 @bot.command(name = 'skip', help = 'Skip the current song')
