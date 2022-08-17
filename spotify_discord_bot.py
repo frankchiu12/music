@@ -68,7 +68,7 @@ async def play(ctx, *search):
 
     search = ' '.join(search)
     if search == '':
-        await ctx.send('No search query. Please try again.')
+        await ctx.send('No search query. Please try again. 🫡')
     else:
         song_id = (sp.search(q = search, type = 'track', limit = 10))['tracks']['items'][0]['id']
         global current_song_id
@@ -84,25 +84,80 @@ async def play(ctx, *search):
         ydl_options = {'format': 'bestaudio'}
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
             song_information = ydl.extract_info(youtube_url, download = False)
-            discord_url = song_information['formats'][0]['url']
-            source = await discord.FFmpegOpusAudio.from_probe(discord_url, **FFMPEG_OPTIONS)
+            audio_url = song_information['formats'][0]['url']
+            source = await discord.FFmpegOpusAudio.from_probe(audio_url, **FFMPEG_OPTIONS)
             voice.play(source, after = lambda e: asyncio.run(next(ctx)))
         await ctx.send('Playing **' + spotify_song_name + '** by ' + str(artist_list) + ' 😌')
+
+@bot.command(name = 'resume', help = 'Resume the music')
+async def resume(ctx):
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
+    if voice and voice.is_paused():
+        voice.resume()
+        await ctx.send('Resuming ... 🫡')
+    else:
+        await ctx.send('The music_bot is already playing or disconnected. 🫡')
+
+@bot.command(name = 'pause', help = 'Pause the music')
+async def pause(ctx):
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
+    if voice and voice.is_playing():
+        voice.pause()
+        await ctx.send('Paused. 🫡')
+    else:
+        await ctx.send('The music_bot is not currently playing or disconnected. 🫡')
+
+@bot.command(name = 'disconnect', help = 'Disconnect the music_bot from the current voice channel')
+async def disconnect(ctx):
+    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
+    if voice:
+        global song_queue
+        song_queue = []
+        await voice.disconnect()
+        await ctx.send('Disconnected. 🫡')
+    else:
+        await ctx.send('The music_bot is not currently connected to a voice channel. 🫡')
+
+@bot.command(name = 'button', help = 'Summon buttons for basic commands')
+async def button(ctx):
+    resume_button = Button(label = 'resume', style = discord.ButtonStyle.green, emoji = '▶️')
+    pause_button = Button(label = 'pause', style = discord.ButtonStyle.red, emoji = '⏸')
+    disconnect_button = Button(label = 'disconnect', style = discord.ButtonStyle.blurple, emoji = '⏹')
+
+    async def resume_button_call_back(interaction):
+        await interaction.response.defer()
+        await resume(ctx)
+    resume_button.callback = resume_button_call_back
+
+    async def pause_button_call_back(interaction):
+        await interaction.response.defer()
+        await pause(ctx)
+    pause_button.callback = pause_button_call_back
+
+    async def disconnect_button_call_back(interaction):
+        await interaction.response.defer()
+        await disconnect(ctx)
+    disconnect_button.callback = disconnect_button_call_back
+
+    view = View()
+    view.add_item(resume_button)
+    view.add_item(pause_button)
+    view.add_item(disconnect_button)
+    await ctx.send(view = view)
 
 @bot.command(name = 'get_information', help = 'Get song information')
 async def get_information(ctx):
     song_id = current_song_id
-    spotify_song_name = sp.track(song_id)['name']
-    spotify_song_main_artist = sp.track(song_id)['artists'][0]['name']
-    youtube_search = VideosSearch(spotify_song_name + ' ' + spotify_song_main_artist, limit = 1)
-    youtube_url = youtube_search.result()['result'][0]['link']
+    if song_id is None:
+        await ctx.send('No song to get information from. 🫡')
     artist_name_list = []
     artist_id_list = []
     for artist in sp.track(song_id)['artists']:
         artist_name_list.append(artist['name'])
         artist_id_list.append(artist['id'])
+    main_artist_name = artist_name_list[0]
     main_artist_id = artist_id_list[0]
-    artist_image_URL =  sp.artist(main_artist_id)['images'][0]['url']
+    artist_image_URL = sp.artist(main_artist_id)['images'][0]['url']
     song_image_URL = sp.track(song_id)['album']['images'][0]['url']
     song_name = sp.track(song_id)['name']
     album_name = sp.track(song_id)['album']['name']
@@ -116,6 +171,8 @@ async def get_information(ctx):
     duration = str(m) + ':' + str(s)
     explicit = sp.track(song_id)['explicit']
     link = sp.track(song_id)['external_urls']['spotify']
+    youtube_search = VideosSearch(song_name + ' ' + main_artist_name, limit = 1)
+    youtube_url = youtube_search.result()['result'][0]['link']
 
     song_embed = discord.Embed(title = 'Song Information', color = discord.Colour.red())
     song_embed.set_author(name = ctx.author.display_name, icon_url = ctx.author.display_avatar)
@@ -156,14 +213,16 @@ async def get_information(ctx):
             song_name = song_name.partition(' (feat.')[0]
         if ' (with ' in song_name:
             song_name = song_name.partition(' (with ')[0]
-        genius_searched_track = genius.search_song(song_name, artist_name_list[0])
+        genius_searched_song = genius.search_song(song_name, main_artist_name)
         try:
-            if genius_searched_track is None:
-                await ctx.send('Unfortunately, no lyrics were found. 🥲')
+            if genius_searched_song is None:
+                await ctx.send('No lyrics were found. 🫡')
             else:
-                await ctx.send(genius_searched_track.lyrics)
+                await ctx.send(genius_searched_song.lyrics)
         except discord.errors.HTTPException:
-            await ctx.send('The lyrics exceeded the character limit of 2000. To view the lyrics, please follow the link: ' + genius_searched_track.url)
+            await ctx.send('The lyrics exceed the character limit of 2000. To view the lyrics, please follow the link: ' + genius_searched_song.url)
+
+######################################################################################################################################
 
     if str(reaction.emoji) == artist_emoji:
         artist_id = main_artist_id
@@ -257,62 +316,6 @@ async def get_information(ctx):
         album_embed.add_field(name = 'Link 🔗', value = link, inline = False)
         album_embed.add_field(name = 'Album Songs 🎵', value = album_song_string, inline = False)
         await ctx.send(embed = album_embed)
-
-@bot.command(name = 'resume', help = 'Resume the music')
-async def resume(ctx):
-    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
-    if voice and voice.is_paused():
-        voice.resume()
-        await ctx.send('Resuming ...')
-    else:
-        await ctx.send('The music_bot is already playing or disconnected.')
-
-@bot.command(name = 'pause', help = 'Pause the music')
-async def pause(ctx):
-    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
-    if voice and voice.is_playing():
-        voice.pause()
-        await ctx.send('Paused.')
-    else:
-        await ctx.send('The music_bot is not currently playing.')
-
-@bot.command(name = 'disconnect', help = 'Disconnect the bot from the current voice channel')
-async def disconnect(ctx):
-    voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
-    if voice:
-        global song_queue
-        song_queue = []
-        await voice.disconnect()
-        await ctx.send('Disconnected.')
-    else:
-        await ctx.send('The music_bot is not currently connected to a voice channel.')
-
-@bot.command(name = 'button', help = 'Summon buttons for basic commands')
-async def button(ctx):
-    resume_button = Button(label = 'resume', style = discord.ButtonStyle.green, emoji = '▶️')
-    pause_button = Button(label = 'pause', style = discord.ButtonStyle.red, emoji = '⏸')
-    disconnect_button = Button(label = 'disconnect', style = discord.ButtonStyle.blurple, emoji = '⏹')
-
-    async def resume_button_call_back(interaction):
-        await interaction.response.defer()
-        await resume(ctx)
-    resume_button.callback = resume_button_call_back
-
-    async def pause_button_call_back(interaction):
-        await interaction.response.defer()
-        await pause(ctx)
-    pause_button.callback = pause_button_call_back
-
-    async def disconnect_button_call_back(interaction):
-        await interaction.response.defer()
-        await disconnect(ctx)
-    disconnect_button.callback = disconnect_button_call_back
-
-    view = View()
-    view.add_item(resume_button)
-    view.add_item(pause_button)
-    view.add_item(disconnect_button)
-    await ctx.send(view = view)
 
 @bot.command(name = 'queue', help = 'Queue a song given a search query')
 async def queue(ctx, *search):
