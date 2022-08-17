@@ -53,7 +53,7 @@ async def on_ready():
 
 @bot.command(name = 'hi', help = 'Respond to hi')
 async def hi(ctx):
-    await ctx.send('hi yvette! ☄️🍼🐣🐥🐎')
+    await ctx.send('hi! ☄️🍼🐣🐥🐎')
 
 @bot.command(name = 'play', help = 'Play a song given a search query')
 async def play(ctx, *search):
