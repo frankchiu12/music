@@ -148,7 +148,7 @@ async def button(ctx):
 @bot.command(name = 'get_information', help = 'Get song information')
 async def get_information(ctx):
     song_id = current_song_id
-    if song_id is None:
+    if song_id == '':
         await ctx.send('No song to get information from. 🫡')
     artist_name_list = []
     artist_id_list = []
@@ -222,8 +222,6 @@ async def get_information(ctx):
         except discord.errors.HTTPException:
             await ctx.send('The lyrics exceed the character limit of 2000. To view the lyrics, please follow the link: ' + genius_searched_song.url)
 
-######################################################################################################################################
-
     if str(reaction.emoji) == artist_emoji:
         artist_id = main_artist_id
         genre_list = str(sp.artist(artist_id)['genres'])
@@ -263,7 +261,7 @@ async def get_information(ctx):
         artist_embed.set_image(url = artist_image_URL)
         artist_embed.timestamp = datetime.datetime.utcnow()
         artist_embed.set_footer(text = '\u200b', icon_url = 'https://www.kindpng.com/picc/m/567-5671142_clock-md-dodger-blue-clipart-png-blue-clock.png')
-        artist_embed.add_field(name = 'Artist Name 🎨', value = artist_name_list[0], inline = False)
+        artist_embed.add_field(name = 'Artist Name 🎨', value = main_artist_name, inline = False)
         artist_embed.add_field(name = 'Genres 📚', value = genre_list, inline = False)
         artist_embed.add_field(name = 'Popularity 🔥', value = popularity, inline = False)
         artist_embed.add_field(name = 'Total Followers ❤️', value = total_followers, inline = False)
@@ -294,7 +292,7 @@ async def get_information(ctx):
             artist_list = []
             for artist in song['artists']:
                 artist_list.append(artist['name'])
-            album_song_list.append(str(counter) + '. **' + song_name + '** with ' + str(artist_list))
+            album_song_list.append(str(counter) + '. **' + song_name + '** by ' + str(artist_list))
             counter += 1
             if counter > 10:
                 break
@@ -321,7 +319,7 @@ async def get_information(ctx):
 async def queue(ctx, *search):
     search = ' '.join(search)
     if search == '':
-        await ctx.send('No search query. Please try again.')
+        await ctx.send('No search query. Please try again. 🫡')
     else:
         song_id = (sp.search(q = search, type = 'track', limit = 10))['tracks']['items'][0]['id']
         song_queue.append(song_id)
@@ -331,7 +329,7 @@ async def queue(ctx, *search):
             artist_list.append(artist['name'])
         await ctx.send('Added **' + song_name + '** by ' + str(artist_list) + ' 😉')
 
-@bot.command(name = 'show_queue', help = 'Show the queue')
+@bot.command(name = 'show_queue', help = 'Show the song queue')
 async def show_queue(ctx):
     song_queue_list = []
     counter = 1
@@ -356,33 +354,37 @@ async def show_queue(ctx):
     song_queue_embed.add_field(name = 'List 📝', value = song_queue_string, inline = False)
     await ctx.send(embed = song_queue_embed)
 
-@bot.command(name = 'clear_queue', help = 'Clear the entire song queue')
+@bot.command(name = 'clear_queue', help = 'Clear the song queue')
 async def clear_queue(ctx):
     global song_queue
     song_queue = []
-    await ctx.send('Queue clear. 🥺')
+    await ctx.send('Queue cleared. 🆑')
 
-@bot.command(name = 'loop', help = 'Loop the current song')
-async def loop(ctx):
-    global song_queue
-    await clear_queue(ctx)
-    for i in range(100):
-        song_queue.append(current_song_id)
-    song_name = sp.track(current_song_id)['name']
-    artist_list = []
-    for artist in sp.track(current_song_id)['artists']:
-        artist_list.append(artist['name'])
-    await ctx.send('Looping **' + song_name + '** by ' + str(artist_list) + ' ♾')
-
-@bot.command(name = 'shuffle', help = 'Shuffle the queue')
+@bot.command(name = 'shuffle', help = 'Shuffle the song queue')
 async def shuffle(ctx):
     global song_queue
     if song_queue == []:
         await ctx.send('No songs in queue. 🫡')
     else:
         random.shuffle(song_queue)
-        await ctx.send('Shuffled! 😤')
+        await ctx.send('Shuffled! 🔀')
         await show_queue(ctx)
+
+@bot.command(name = 'loop', help = 'Loop the current song')
+async def loop(ctx):
+    print(current_song_id)
+    if current_song_id == '':
+        await ctx.send('No song to loop. 🫡')
+    else:
+        global song_queue
+        await clear_queue(ctx)
+        for i in range(100):
+            song_queue.append(current_song_id)
+        song_name = sp.track(current_song_id)['name']
+        artist_list = []
+        for artist in sp.track(current_song_id)['artists']:
+            artist_list.append(artist['name'])
+        await ctx.send('Looping **' + song_name + '** by ' + str(artist_list) + ' ♾')
 
 async def next(ctx):
     voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
@@ -398,8 +400,8 @@ async def next(ctx):
         ydl_options = {'format': 'bestaudio'}
         with youtube_dl.YoutubeDL(ydl_options) as ydl:
             song_information = ydl.extract_info(youtube_url, download = False)
-            discord_url = song_information['formats'][0]['url']
-            source = await discord.FFmpegOpusAudio.from_probe(discord_url, **FFMPEG_OPTIONS)
+            audio_url = song_information['formats'][0]['url']
+            source = await discord.FFmpegOpusAudio.from_probe(audio_url, **FFMPEG_OPTIONS)
             voice = discord.utils.get(bot.voice_clients, guild = ctx.guild)
             voice.play(source, after = lambda e: asyncio.run(next(ctx)))
 
@@ -410,15 +412,15 @@ async def skip(ctx):
         await voice.disconnect()
         voice_channel = discord.utils.get(ctx.guild.voice_channels, name = 'General')
         voice = await voice_channel.connect()
-        await ctx.send('Skipping ... 🥰')
+        await ctx.send('Skipping ... 🥺')
     else:
-        await ctx.send('The music_bot is not currently playing.')
+        await ctx.send('The music_bot is not currently playing or disconnected. 🫡')
 
 @bot.command(name = 'artist', help = 'Search up artist information')
 async def artist(ctx, *search):
     search = ' '.join(search)
     if search == '':
-        await ctx.send('No search query. Please try again.')
+        await ctx.send('No search query. Please try again. 🫡')
     else:
         artist_id = sp.search(q = search, type = 'artist')['artists']['items'][0]['id']
         artist_image_URL =  sp.artist(artist_id)['images'][0]['url']
@@ -474,7 +476,7 @@ async def artist(ctx, *search):
 async def album(ctx, *search):
     search = ' '.join(search)
     if search == '':
-        await ctx.send('No search query. Please try again.')
+        await ctx.send('No search query. Please try again. 🫡')
     else:
         album_id = sp.search(q = search, type = 'album', limit = 10)['albums']['items'][0]['id']
         album_image_URL = sp.album(album_id)['images'][0]['url']
@@ -496,7 +498,7 @@ async def album(ctx, *search):
             artist_list = []
             for artist in song['artists']:
                 artist_list.append(artist['name'])
-            album_song_list.append(str(counter) + '. **' + song_name + '** with ' + str(artist_list))
+            album_song_list.append(str(counter) + '. **' + song_name + '** by ' + str(artist_list))
             counter += 1
             if counter > 10:
                 break
@@ -523,7 +525,7 @@ async def album(ctx, *search):
 async def playlist(ctx, *search):
     search = ' '.join(search)
     if search == '':
-        await ctx.send('No search query. Please try again.')
+        await ctx.send('No search query. Please try again. 🫡')
     else:
         playlist_id = sp.search(q = search, type = 'playlist', limit = 10)['playlists']['items'][0]['id']
         playlist_image_URL = sp.playlist(playlist_id)['images'][0]['url']
@@ -540,7 +542,7 @@ async def playlist(ctx, *search):
             artist_list = []
             for artist in song['track']['artists']:
                 artist_list.append(artist['name'])
-            playlist_song_list.append(str(counter) + '. **' + song_name + '** with ' + str(artist_list))
+            playlist_song_list.append(str(counter) + '. **' + song_name + '** by ' + str(artist_list))
             counter += 1
             if counter > 10:
                 break
@@ -586,7 +588,7 @@ async def new(ctx):
         artist_list = []
         for artist in album['artists']:
             artist_list.append(artist['name'])
-        newly_released_album_list.append(str(counter) + '. **' + album_name + '** with ' + str(artist_list))
+        newly_released_album_list.append(str(counter) + '. **' + album_name + '** by ' + str(artist_list))
         counter += 1
     newly_released_album_string = '\n'.join(newly_released_album_list)
 
@@ -609,21 +611,21 @@ async def on_inactivity():
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send('That command doesn\'t exist.')
+        await ctx.send('That command doesn\'t exist. 🫡')
     elif isinstance(error, commands.CommandInvokeError):
-        await ctx.send('An error has occurred. Please try again. 😟')
+        await ctx.send('An error has occurred. Please try again. 🫠')
     else:
         pass
 
 @play.error
 async def client_exception_error(ctx, error):
     if isinstance(error, discord.errors.ClientException):
-        await ctx.send('An error has occurred. Please try again. 😟')
+        await ctx.send('An error has occurred. Please try again. 🫠')
 
 @skip.error
 async def client_exception_error(ctx, error):
     if isinstance(error, discord.errors.ClientException):
-        await ctx.send('An error has occurred. Please try again. 😟')
+        await ctx.send('An error has occurred. Please try again. 🫠')
 
 bot.run(TOKEN)
 
